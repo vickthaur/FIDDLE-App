@@ -75,9 +75,20 @@
         </div>
     </div>
 
-    <script>
-        const config = appliquerConfig();
-        document.getElementById('form-inscription').action = config.formInscription;
+<script>
+        // On attend que toute la page soit bien chargée
+        document.addEventListener("DOMContentLoaded", function() {
+            const config = appliquerConfig();
+            const form = document.getElementById('form-inscription');
+            
+            if(form && config.formInscription) {
+                form.action = config.formInscription;
+                console.log("✅ Formulaire connecté au lien :", form.action);
+            } else {
+                console.log("❌ Erreur : Formulaire ou lien introuvable.");
+            }
+        });
     </script>
 </body>
+
 </html>
