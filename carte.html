@@ -25,16 +25,20 @@
         
         #qrcode { background: white; padding: 15px; border-radius: 15px; display: inline-block; margin: 25px 0; }
         .instructions { font-size: 12px; color: #666; line-height: 1.5; }
+
+        /* Animation de chargement des points */
+        .loading-pulse { animation: pulse 1.5s infinite; color: #888; font-size: 24px; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
     <div class="card">
         <div class="logo-resto nom-resto">Chargement...</div>
-        <p class="welcome">Bonjour, <strong id="user-prenom" style="color: var(--primary);">Ami</strong> !</p>
+        <p class="welcome">Bonjour, <strong id="user-prenom" style="color: var(--primary);">...</strong> !</p>
         
         <div class="points-display">
-            <div class="points-number" id="user-points">0</div>
+            <div class="points-number loading-pulse" id="user-points">...</div>
             <div class="points-label">POINTS CUMULÉS</div>
         </div>
 
@@ -50,42 +54,48 @@
     </div>
 
     <script>
-        // 1. On applique les couleurs et textes du resto
-        appliquerConfig();
+        // 1. On applique les couleurs et textes du resto (config.js)
+        if (typeof appliquerConfig === "function") {
+            appliquerConfig();
+        }
         
-        // 2. On lit l'URL envoyée par Brevo
+        // 2. Configuration
         const urlParams = new URLSearchParams(window.location.search);
-        const prenom = urlParams.get('prenom') || "Client";
         const email = urlParams.get('email');
-        const points = parseInt(urlParams.get('p')) || 0;
+        const maxPoints = 5; // Le maximum pour le cadeau
         
-        // 🛠️ LE MAXIMUM DE POINTS POUR AVOIR LE CADEAU (Tu peux le changer ici)
-        const maxPoints = 5;
+        // 🔗 TON LIEN GOOGLE SCRIPT EST INTÉGRÉ ICI :
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxRlv9sB3e0_dVpgLJv_ZueFif_yhcGvUxyLB7mn9SgfDWSRkQvMHfp2d-geM62KlOfzA/exec";
 
-        // 3. On affiche le prénom et les points
-        document.getElementById('user-prenom').innerText = prenom;
-        document.getElementById('user-points').innerText = points;
-        
-        // On fait avancer la barre (avec un maximum bloqué à 100%)
-        const pourcentage = (points / maxPoints) * 100;
-        document.getElementById('barre-progression').style.width = Math.min(pourcentage, 100) + "%";
+        // 3. Fonction pour mettre à jour l'affichage avec les données réelles
+        function mettreAJourCarte(points, prenom) {
+            document.getElementById('user-prenom').innerText = prenom || "Client";
+            
+            const pointsEl = document.getElementById('user-points');
+            pointsEl.innerText = points;
+            pointsEl.classList.remove('loading-pulse'); // On enlève l'animation
+            
+            // Animation de la barre
+            const pourcentage = (points / maxPoints) * 100;
+            document.getElementById('barre-progression').style.width = Math.min(pourcentage, 100) + "%";
 
-        // 🎯 4. LA LOGIQUE DE LA PHRASE DYNAMIQUE
-        const phraseInfo = document.getElementById('phrase-info');
-        const pointsRestants = maxPoints - points;
+            // Logique de la phrase
+            const phraseInfo = document.getElementById('phrase-info');
+            const pointsRestants = maxPoints - points;
 
-        if (pointsRestants > 1) {
-            phraseInfo.innerHTML = "Plus que <strong>" + pointsRestants + " points</strong> avant votre cadeau !";
-        } else if (pointsRestants === 1) {
-            phraseInfo.innerHTML = "Plus que <strong>1 point</strong> avant votre cadeau !";
-        } else {
-            // Si les points sont à 5 ou plus
-            phraseInfo.innerHTML = "🎉 <strong>Cadeau débloqué !</strong>";
-            phraseInfo.style.color = "var(--primary)"; // Le texte s'illumine à la couleur du resto
+            if (pointsRestants > 1) {
+                phraseInfo.innerHTML = "Plus que <strong>" + pointsRestants + " points</strong> avant votre cadeau !";
+            } else if (pointsRestants === 1) {
+                phraseInfo.innerHTML = "Plus que <strong>1 point</strong> avant votre cadeau !";
+            } else {
+                phraseInfo.innerHTML = "🎉 <strong>Cadeau débloqué !</strong>";
+                phraseInfo.style.color = "var(--primary)";
+            }
         }
 
-        // 5. On génère le QR Code
+        // 4. Appel au Google Script pour récupérer les points en direct
         if (email) {
+            // Génération du QR Code tout de suite (pas besoin d'attendre Google)
             new QRCode(document.getElementById("qrcode"), {
                 text: email,
                 width: 150,
@@ -94,8 +104,24 @@
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
+
+            // On interroge la base de données via Google Script
+            fetch(scriptURL + "?email=" + encodeURIComponent(email))
+                .then(response => response.json())
+                .then(data => {
+                    // On met à jour la carte avec les VRAIS points
+                    mettreAJourCarte(data.points, data.prenom);
+                })
+                .catch(error => {
+                    console.error("Erreur de récupération :", error);
+                    document.getElementById('phrase-info').innerHTML = "<span style='color:#ef4444;'>Erreur de synchronisation</span>";
+                    mettreAJourCarte(0, "Client"); // Valeurs par défaut en cas d'erreur
+                });
         } else {
-            document.getElementById('qrcode').innerHTML = "<p style='color:black; font-size:10px;'>Erreur: Email manquant</p>";
+            document.getElementById('qrcode').innerHTML = "<p style='color:black; font-size:10px; padding:20px;'>Erreur: Email manquant</p>";
+            document.getElementById('phrase-info').innerText = "Veuillez cliquer sur le lien dans votre email.";
+            document.getElementById('user-points').innerText = "0";
+            document.getElementById('user-points').classList.remove('loading-pulse');
         }
     </script>
 </body>
