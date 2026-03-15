@@ -35,27 +35,28 @@
             const emailClient = urlParams.get('email');
             const uiBox = document.getElementById('ui-box');
 
-            // 🔗 TON LIEN GOOGLE SCRIPT EST ICI :
-            const API_URL = "https://script.google.com/macros/s/AKfycbw_wst65wc-eZIITBfNneeyYKeYRCE7451b2yoNsir5gJLsSdVmjR9yM879aG3eDTgB2A/exec";
+            // 🔗 TON NOUVEAU LIEN GOOGLE SCRIPT EST ICI :
+            const API_URL = "https://script.google.com/macros/s/AKfycbyjfLm46q2wuOjqn1kwII6bmM4QGGG8iD9S3VXa3bQ3_eL9NvOZQcQ4KEBow4l0mNU9xg/exec";
 
             if (emailClient) {
-                // On appelle le Google Script qui va faire le travail sur Brevo en arrière-plan
+                // On appelle le Google Script
                 fetch(API_URL + "?email=" + encodeURIComponent(emailClient))
                     .then(response => response.json())
                     .then(data => {
                         
                         if(data.success) {
-                            // 🟢 SUCCÈS API : ON PASSE AU VERT (Effet Apple Pay)
+                            // 🟢 SUCCÈS API : ON PASSE AU VERT
                             document.body.style.backgroundColor = '#10b981';
                             document.getElementById('son-succes').play().catch(()=>console.log("Son bloqué"));
                             
+                            // On affiche le nouveau score renvoyé par le script
                             uiBox.innerHTML = `
                                 <div class="icon-box">✔️</div>
                                 <h1>VALIDÉ !</h1>
                                 <p>Score actuel : ${data.nouveauScore} pts</p>
                             `;
 
-                            // Redirection vers le scanner après 2 secondes pour enchaîner les clients
+                            // Redirection vers le scanner après 2 secondes
                             setTimeout(() => {
                                 window.location.href = 'https://vickthaur.github.io/FIDDLE-scanner/';
                             }, 2000);
