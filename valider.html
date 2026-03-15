@@ -3,87 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validation du Point - FIDELITE</title>
-    <script src="config.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <title>Validation Fiddle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #ff7675; /* Modifié par config.js */
-        }
-        body { 
-            font-family: 'Poppins', sans-serif; 
-            background: #1a1a1a; 
-            color: white; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            text-align: center; 
-        }
-        .card { 
-            background: #262626; 
-            padding: 40px; 
-            border-radius: 25px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.5); 
-            width: 85%; 
-            max-width: 400px; 
-        }
-        .spinner { 
-            border: 5px solid #333; 
-            border-top: 5px solid var(--primary); 
-            border-radius: 50%; 
-            width: 50px; 
-            height: 50px; 
-            animation: spin 1s linear infinite; 
-            margin: 20px auto; 
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        h2 { font-size: 20px; color: var(--primary); margin-bottom: 10px; }
-        p { color: #aaa; font-size: 14px; }
-        #display-email { font-weight: 600; color: #fff; word-break: break-all; }
+        body { margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Poppins', sans-serif; background-color: #1a1a1a; color: white; text-align: center; transition: background-color 0.4s ease-out; overflow: hidden; }
+        .container { display: flex; flex-direction: column; align-items: center; transform: scale(0.9); animation: popIn 0.4s forwards; }
+        @keyframes popIn { to { transform: scale(1); } }
+        .icon-box { font-size: 90px; margin-bottom: 10px; line-height: 1; animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .spinner { width: 70px; height: 70px; border: 6px solid rgba(255,255,255,0.1); border-top-color: #ffffff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        h1 { font-size: 32px; margin: 0 0 10px 0; letter-spacing: 1px; }
+        p { color: rgba(255,255,255,0.9); font-size: 16px; margin: 0; font-weight: 500;}
+        .btn-retour { margin-top: 30px; padding: 12px 30px; border: none; border-radius: 12px; background: white; color: #ef4444; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
     </style>
 </head>
-<body onload="lancerValidation();">
+<body onload="lancerValidation()">
 
-    <div class="card">
+    <audio id="son-succes" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3" preload="auto"></audio>
+    <audio id="son-erreur" src="https://assets.mixkit.co/active_storage/sfx/2954/2954-preview.mp3" preload="auto"></audio>
+
+    <div class="container" id="ui-box">
         <div class="spinner"></div>
-        <h2>VALIDATION...</h2>
-        <p class="nom-resto" style="color: #aaa; font-size: 12px; margin-bottom: 15px;">Chargement...</p>
-        <p>Enregistrement du point pour :</p>
-        <div id="display-email">Recherche du client...</div>
+        <h1>Traitement...</h1>
+        <p>Validation sécurisée</p>
     </div>
-
-    <form id="brevo-form" method="POST" style="display:none;">
-        <input type="email" name="EMAIL" id="email-input" required>
-        <input type="text" name="email_address_check" value="">
-        <input type="hidden" name="locale" value="fr">
-        <input type="hidden" name="html_type" value="simple">
-    </form>
 
     <script>
         function lancerValidation() {
-            // 1. On charge la config (ça met les bonnes couleurs et le bon nom)
-            const config = appliquerConfig();
-            
-            // 2. On connecte le formulaire au bon lien Brevo du resto
-            document.getElementById('brevo-form').action = config.formValidation;
-
-            // 3. On récupère l'email scanné
             const urlParams = new URLSearchParams(window.location.search);
             const emailClient = urlParams.get('email');
+            const uiBox = document.getElementById('ui-box');
+
+            // 🔗 TON LIEN GOOGLE SCRIPT EST ICI :
+            const API_URL = "https://script.google.com/macros/s/AKfycbw_wst65wc-eZIITBfNneeyYKeYRCE7451b2yoNsir5gJLsSdVmjR9yM879aG3eDTgB2A/exec";
 
             if (emailClient) {
-                document.getElementById('display-email').innerText = emailClient;
-                document.getElementById('email-input').value = emailClient;
+                // On appelle le Google Script qui va faire le travail sur Brevo en arrière-plan
+                fetch(API_URL + "?email=" + encodeURIComponent(emailClient))
+                    .then(response => response.json())
+                    .then(data => {
+                        
+                        if(data.success) {
+                            // 🟢 SUCCÈS API : ON PASSE AU VERT (Effet Apple Pay)
+                            document.body.style.backgroundColor = '#10b981';
+                            document.getElementById('son-succes').play().catch(()=>console.log("Son bloqué"));
+                            
+                            uiBox.innerHTML = `
+                                <div class="icon-box">✔️</div>
+                                <h1>VALIDÉ !</h1>
+                                <p>Score actuel : ${data.nouveauScore} pts</p>
+                            `;
 
-                // On valide automatiquement au bout d'1.5s
-                setTimeout(() => {
-                    document.getElementById('brevo-form').submit();
-                }, 1500);
+                            // Redirection vers le scanner après 2 secondes pour enchaîner les clients
+                            setTimeout(() => {
+                                window.location.href = 'https://vickthaur.github.io/FIDDLE-scanner/';
+                            }, 2000);
+
+                        } else {
+                            afficherErreur();
+                        }
+                    })
+                    .catch(error => {
+                        afficherErreur();
+                    });
+
             } else {
-                document.getElementById('display-email').innerText = "ERREUR : Aucun email détecté.";
-                document.getElementById('display-email').style.color = "#ff4d4d";
+                afficherErreur("Aucun QR Code détecté.");
+            }
+
+            function afficherErreur(message = "Erreur de connexion API") {
+                // 🔴 ERREUR API : ON PASSE AU ROUGE
+                document.body.style.backgroundColor = '#ef4444';
+                document.getElementById('son-erreur').play().catch(()=>console.log("Son bloqué"));
+                
+                uiBox.innerHTML = `
+                    <div class="icon-box">❌</div>
+                    <h1>ÉCHEC</h1>
+                    <p>${message}</p>
+                    <button class="btn-retour" onclick="window.location.href='https://vickthaur.github.io/FIDDLE-scanner/'">Retour au Scanner</button>
+                `;
             }
         }
     </script>
