@@ -99,7 +99,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const email = urlParams.get('email');
         const prenomInitial = urlParams.get('prenom');
-        const restoID = urlParams.get('resto') || "bistrot"; // 🎯 CORRECTION ICI : Le resto est bien identifié !
+        const restoID = urlParams.get('resto') || "bistrot"; 
 
         // Affichage immédiat du prénom s'il est dispo
         if (prenomInitial) {
@@ -118,7 +118,7 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            // 4. Appel au Google Script pour lire les points (avec le paramètre restoID !)
+            // 4. Appel au Google Script pour lire les points
             const urlAPI = `${currentConfig.scriptLecture}?email=${encodeURIComponent(email)}&resto=${encodeURIComponent(restoID)}&v=${Date.now()}`;
 
             fetch(urlAPI)
