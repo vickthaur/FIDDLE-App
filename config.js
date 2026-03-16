@@ -23,7 +23,7 @@ const agenceClients = {
         
         // Moteurs Google Script
         scriptLecture: "https://script.google.com/macros/s/AKfycbx5wex2lA8EkyTbEtSaFGtK3u4YXvMNuHVdH9DED2B1pfYogzwRMNfgmlXF5riJhTHK/exec",
-        scriptValidation: "https://script.google.com/macros/s/AKfycbyDzCL_VVaRXrwGaMFAAYrvnCAoV6Qy3FCaDS3Uz2L75y_7QXLm9EUABKocaQgUxNJx8w/exec"
+        scriptValidation: "https://script.google.com/macros/s/AKfycbzNQRsgCnAVD2loRRa1mb2LRpDHFc3UA1nPM32C2NUmXOTXRJ3DiMZcTahIPnrusgibpw/exec"
     },
 
     // ---------------------------------------------------------
@@ -45,7 +45,7 @@ const agenceClients = {
         
         // Moteurs Google Script
         scriptLecture: "https://script.google.com/macros/s/AKfycbx5wex2lA8EkyTbEtSaFGtK3u4YXvMNuHVdH9DED2B1pfYogzwRMNfgmlXF5riJhTHK/exec",
-        scriptValidation: "https://script.google.com/macros/s/AKfycbyDzCL_VVaRXrwGaMFAAYrvnCAoV6Qy3FCaDS3Uz2L75y_7QXLm9EUABKocaQgUxNJx8w/exec"
+        scriptValidation: "https://script.google.com/macros/s/AKfycbzNQRsgCnAVD2loRRa1mb2LRpDHFc3UA1nPM32C2NUmXOTXRJ3DiMZcTahIPnrusgibpw/exec"
     }
 };
 
