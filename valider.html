@@ -99,8 +99,8 @@
 
     <script>
         function lancerValidation() {
-            // 1. Charger la config dynamique (le cerveau)
-            let config = {};
+            // 1. Charger la config dynamique
+            let config = { id: 'bistrot' };
             if (typeof appliquerConfig === "function") {
                 config = appliquerConfig();
             }
@@ -108,18 +108,17 @@
             const urlParams = new URLSearchParams(window.location.search);
             const emailClient = urlParams.get('email');
             
-            // On récupère le resto pour savoir où retourner
-            const restoID = config.id || 'bistrot'; 
+            // 🎯 CORRECTION : On s'assure de bien récupérer l'ID du resto depuis l'URL ou la config
+            const restoID = urlParams.get('resto') || config.id; 
             const URL_RETOUR = `scanner.html?resto=${restoID}`;
 
             const uiBox = document.getElementById('ui-box');
             
-            // ⚠️ CORRECTION : On utilise le script de VALIDATION défini dans config.js
             const API_URL = config.scriptValidation;
 
-            if (emailClient && API_URL) {
-                // Appel API vers le Google Script (+1 Point)
-                fetch(API_URL + "?email=" + encodeURIComponent(emailClient))
+            if (emailClient && API_URL && restoID) {
+                // 🎯 CORRECTION : On envoie l'email ET le resto au Google Script !
+                fetch(API_URL + "?email=" + encodeURIComponent(emailClient) + "&resto=" + encodeURIComponent(restoID))
                     .then(response => response.json())
                     .then(data => {
                         if(data.success) {
