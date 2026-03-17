@@ -19,7 +19,7 @@ const agenceClients = {
         // ⚙️ Mécanique de fidélité
         seuilPoints: 5,
         recompense: "5 points = 1 Dessert Offert 🍰",
-        pointsBienvenue: 0, // Commence à 0 point
+        pointsBienvenue: 1, // Commence à 0 point
         
         // 🛡️ Sécurité
         delaiAntiFraudeHeures: 12, // Impossible de valider 2 points en moins de 12h
