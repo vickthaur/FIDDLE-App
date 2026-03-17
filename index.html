@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - FIDDLE-App</title>
+    <title>Inscription - Programme de Fidélité</title>
     
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -38,6 +39,12 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.04); 
             text-align: center; 
             border: 1px solid rgba(0,0,0,0.05);
+            animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp { 
+            from { opacity: 0; transform: translateY(30px); } 
+            to { opacity: 1; transform: translateY(0); } 
         }
 
         .logo-placeholder { font-size: 48px; margin-bottom: 20px; display: block; }
@@ -52,6 +59,7 @@
         .subtitle { font-size: 15px; color: #64748b; margin-bottom: 35px; line-height: 1.6; }
         .subtitle strong { color: var(--primary); font-weight: 700; }
 
+        /* Champs du Formulaire */
         .form-group { margin-bottom: 22px; text-align: left; }
         .form-group label { 
             display: block; font-size: 11px; font-weight: 800; margin-bottom: 8px; 
@@ -75,8 +83,8 @@
             cursor: pointer; transition: all 0.3s ease; margin-top: 10px; 
         }
 
-        button:hover { transform: translateY(-3px); filter: brightness(1.1); }
-        button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; }
+        button:hover { transform: translateY(-3px); filter: brightness(1.1); box-shadow: 0 10px 25px var(--primary-glow); }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .footer { font-size: 11px; color: #94a3b8; margin-top: 40px; line-height: 1.6; }
     </style>
@@ -106,7 +114,7 @@
             <input type="hidden" name="email_address_check" value="">
             <input type="hidden" name="locale" value="fr">
 
-            <button type="submit" id="btn-submit">Gagner mon 1er point 🚀</button>
+            <button type="submit" id="btn-submit">Recevoir ma carte 🚀</button>
         </form>
 
         <div class="footer">
@@ -117,25 +125,33 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // 1. Initialisation via config.js
             const config = appliquerConfig();
             const form = document.getElementById('form-inscription');
             const btn = document.getElementById('btn-submit');
             const visualIcon = document.getElementById('visual-icon');
 
+            // 2. Configuration selon le restaurant
             if (config.id !== "default" && config.formInscription !== "#") {
                 form.action = config.formInscription;
                 if (config.id === "villa_saint_antoine") visualIcon.innerHTML = "✨";
                 if (config.id === "bistrot") visualIcon.innerHTML = "🍴";
+                
+                // Si des points de bienvenue sont offerts, on change le texte du bouton
+                if (config.pointsBienvenue > 0) {
+                    btn.innerText = `Obtenir ma carte (+${config.pointsBienvenue} pt offert) 🎁`;
+                }
             } else {
+                // Mode Neutre (URL invalide)
                 btn.disabled = true;
                 btn.innerText = "Sélectionnez un établissement";
             }
 
-            // ⚡ LA MAGIE EST ICI : Intercepter le formulaire pour Supabase
+            // 3. ⚡ MOTEUR D'ENREGISTREMENT SUPABASE + BREVO
             form.addEventListener('submit', async function(e) {
-                e.preventDefault(); // On met l'envoi vers Brevo en pause 1 seconde
+                e.preventDefault(); // On met Brevo en pause une seconde
                 
-                btn.innerText = "Création de votre carte...";
+                btn.innerText = "Création de votre profil...";
                 btn.disabled = true;
 
                 const emailSaisi = document.getElementById('email').value.trim().toLowerCase();
@@ -144,25 +160,43 @@
                 try {
                     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     
-                    // 1. On vérifie si le client existe déjà
-                    const { data: existing } = await _supabase.from('clients').select('email').eq('email', emailSaisi).maybeSingle();
+                    // --- ETAPE A : LE CRM (Table clients) ---
+                    const { data: existingClient } = await _supabase.from('clients').select('email').eq('email', emailSaisi).maybeSingle();
 
-                    // 2. S'il n'existe pas, on le crée ! (S'il existe, on le laisse tranquille)
-                    if (!existing) {
+                    if (!existingClient) {
+                        // Nouveau client : on l'ajoute au CRM global
                         await _supabase.from('clients').insert([{ 
                             email: emailSaisi, 
-                            prenom: prenomSaisi 
+                            prenom: prenomSaisi,
+                            restaurant_origine: config.id
                         }]);
                     } else {
-                        // S'il existe déjà mais qu'il se réinscrit, on met à jour son prénom
+                        // Client existant : on met juste à jour son prénom au cas où
                         await _supabase.from('clients').update({ prenom: prenomSaisi }).eq('email', emailSaisi);
                     }
+
+                    // --- ETAPE B : LE COMPTEUR DE POINTS (Table points) ---
+                    const { data: existingPoints } = await _supabase.from('points')
+                        .select('id')
+                        .eq('client_email', emailSaisi)
+                        .eq('restaurant_id', config.id)
+                        .maybeSingle();
+
+                    if (!existingPoints) {
+                        // On initialise son compteur pour CE restaurant (avec ou sans points de bienvenue)
+                        await _supabase.from('points').insert([{
+                            client_email: emailSaisi,
+                            restaurant_id: config.id,
+                            total_points: config.pointsBienvenue || 0
+                        }]);
+                    }
+
                 } catch (err) {
-                    console.error("Erreur d'inscription Supabase :", err);
-                    // On ne bloque pas le client s'il y a un souci, on continue
+                    console.error("Erreur de synchronisation Supabase :", err);
+                    // Même s'il y a un micro-bug réseau, on ne bloque pas le client !
                 }
 
-                // 3. On libère le formulaire : ça part vers Brevo !
+                // 4. On libère le formulaire : Les données partent chez Brevo pour déclencher l'email !
                 form.submit();
             });
         });
