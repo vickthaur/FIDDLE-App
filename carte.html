@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ma Carte Fidélité</title>
+    <title>Ma Carte - FIDDLE-App</title>
     
     <script src="config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Variables dynamiques écrasées par config.js */
-        :root { 
+        :root {
             --primary: #ff7675; 
             --primary-glow: rgba(255, 118, 117, 0.3); 
         }
@@ -30,44 +29,38 @@
             background-image: radial-gradient(circle at top right, #1a1f2e 0%, #0b0d12 60%);
         }
 
-        /* Conteneur de la carte */
         .card { 
             background: rgba(30, 34, 43, 0.7); 
             backdrop-filter: blur(15px); 
             -webkit-backdrop-filter: blur(15px);
             width: 100%; 
             max-width: 380px; 
-            border-radius: 30px; 
+            border-radius: 32px; 
             padding: 40px 25px; 
             text-align: center;
             border: 1px solid rgba(255,255,255,0.08); 
             box-shadow: 0 30px 60px rgba(0,0,0,0.5);
         }
 
-        /* Textes */
-        .logo-resto { font-size: 12px; text-transform: uppercase; letter-spacing: 4px; color: var(--primary); margin-bottom: 25px; font-weight: 700; }
-        .welcome { font-size: 16px; color: #94a3b8; }
-        .points-number { font-size: 72px; font-weight: 800; color: white; line-height: 1; margin: 10px 0; text-shadow: 0 0 20px var(--primary-glow); }
-        .points-label { font-size: 11px; color: #64748b; letter-spacing: 2px; margin-bottom: 25px; font-weight: 600; }
+        .nom-resto { font-size: 11px; text-transform: uppercase; letter-spacing: 4px; color: var(--primary); margin-bottom: 20px; font-weight: 700; }
+        .welcome { font-size: 16px; color: #94a3b8; margin-bottom: 5px; }
+        .points-number { font-size: 82px; font-weight: 800; color: white; line-height: 1; margin: 10px 0; text-shadow: 0 0 20px var(--primary-glow); }
+        .points-label { font-size: 11px; color: #64748b; letter-spacing: 2px; margin-bottom: 25px; font-weight: 700; }
         
-        /* Barre de progression */
         .progress-container { background: rgba(255,255,255,0.05); height: 12px; border-radius: 20px; margin: 20px 0; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
         .progress-bar { background: linear-gradient(90deg, var(--primary), #fff); height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
         
-        /* QR Code et Récompense */
         #qrcode { background: white; padding: 12px; border-radius: 20px; display: inline-block; margin: 25px 0; border: 4px solid rgba(255,255,255,0.1); }
-        .reward-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 15px; font-size: 13px; margin: 15px 0; color: #cbd5e1; }
+        .reward-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 18px; font-size: 13px; margin: 15px 0; color: #cbd5e1; line-height: 1.4; }
         
-        /* Animations */
         .loading-pulse { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-        .error-msg { color: #ff7675; font-size: 12px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
     <main class="card">
-        <header class="logo-resto nom-resto">Chargement...</header>
+        <header class="nom-resto">Chargement...</header>
         <p class="welcome">Bonjour, <span id="user-prenom" class="loading-pulse">...</span></p>
         
         <section class="points-display">
@@ -79,36 +72,27 @@
             <div class="progress-container">
                 <div class="progress-bar" id="barre-progression"></div>
             </div>
-            <p id="phrase-info" style="font-size: 14px; color: #cbd5e1; font-weight: 500;">Mise à jour en cours...</p>
+            <p id="phrase-info" style="font-size: 14px; color: #cbd5e1; font-weight: 500;">Calcul de vos points...</p>
             <div class="reward-box texte-recompense">Chargement de l'offre...</div>
         </section>
 
         <section class="qr-section">
             <div id="qrcode"></div>
-            <p style="font-size: 12px; color: #94a3b8;">Présentez ce QR Code au serveur</p>
+            <p style="font-size: 11px; color: #64748b;">Présentez ce QR Code lors de votre passage</p>
         </section>
-
-        <div id="error-display" class="error-msg">Impossible de charger vos données.</div>
     </main>
 
     <script>
-        // 1. Initialisation (Lecture du cerveau config.js)
-        const currentConfig = typeof appliquerConfig === "function" ? appliquerConfig() : { seuilPoints: 5 };
+        // 1. Initialisation de la config
+        const config = appliquerConfig();
         
-        // 2. Récupération des données depuis l'URL (ex: ?email=jean@mail.com&resto=bistrot)
+        // 2. Récupération des paramètres URL
         const urlParams = new URLSearchParams(window.location.search);
         const email = urlParams.get('email');
-        const prenomInitial = urlParams.get('prenom');
-        const restoID = urlParams.get('resto') || "bistrot"; 
-
-        // Affichage immédiat du prénom s'il est dispo
-        if (prenomInitial) {
-            document.getElementById('user-prenom').innerText = prenomInitial;
-            document.getElementById('user-prenom').classList.remove('loading-pulse');
-        }
+        const restoID = config.id;
 
         if (email) {
-            // 3. Génération du QR Code pour le scanner
+            // 3. Génération du QR Code
             new QRCode(document.getElementById("qrcode"), {
                 text: email,
                 width: 130,
@@ -118,29 +102,29 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            // 4. Appel au Google Script pour lire les points
-            const urlAPI = `${currentConfig.scriptLecture}?email=${encodeURIComponent(email)}&resto=${encodeURIComponent(restoID)}&v=${Date.now()}`;
+            // 4. Appel API de LECTURE avec cache-busting (v=Date.now())
+            const urlAPI = `${config.scriptLecture}?email=${encodeURIComponent(email)}&resto=${restoID}&cache=${Date.now()}`;
 
             fetch(urlAPI)
                 .then(response => response.json())
                 .then(data => {
                     // Mise à jour du prénom
-                    if (data.prenom) {
-                        document.getElementById('user-prenom').innerText = data.prenom;
-                        document.getElementById('user-prenom').classList.remove('loading-pulse');
-                    }
+                    const prenomEl = document.getElementById('user-prenom');
+                    prenomEl.innerText = data.prenom || "Client";
+                    prenomEl.classList.remove('loading-pulse');
 
-                    // Mise à jour visuelle des points
+                    // Mise à jour des points
                     const points = parseInt(data.points) || 0;
-                    const seuil = currentConfig.seuilPoints;
-                    
-                    document.getElementById('user-points').innerText = points;
-                    document.getElementById('user-points').classList.remove('loading-pulse');
-                    
-                    // Calcul de la barre de progression
-                    document.getElementById('barre-progression').style.width = `${Math.min((points / seuil) * 100, 100)}%`;
+                    const pointsEl = document.getElementById('user-points');
+                    pointsEl.innerText = points;
+                    pointsEl.classList.remove('loading-pulse');
 
-                    // Mise à jour de la phrase d'encouragement
+                    // Mise à jour de la progression
+                    const seuil = config.seuilPoints;
+                    const pourcentage = Math.min((points / seuil) * 100, 100);
+                    document.getElementById('barre-progression').style.width = `${pourcentage}%`;
+
+                    // Texte d'info dynamique
                     const phraseInfo = document.getElementById('phrase-info');
                     if (points < seuil) {
                         const reste = seuil - points;
@@ -152,13 +136,11 @@
                 })
                 .catch(error => {
                     console.error("Erreur API :", error);
-                    document.getElementById('error-display').style.display = "block";
-                    document.getElementById('phrase-info').innerText = "Erreur de connexion.";
+                    document.getElementById('phrase-info').innerText = "Erreur de chargement des points.";
                 });
 
         } else {
-            // Erreur si aucun email n'est fourni dans l'URL
-            document.querySelector('.card').innerHTML = "<h1>Lien Invalide</h1><p>Veuillez utiliser le lien reçu par email.</p>";
+            document.querySelector('.card').innerHTML = "<h1>Oups !</h1><p>Lien invalide. Veuillez utiliser le lien reçu par email.</p>";
         }
     </script>
 </body>
