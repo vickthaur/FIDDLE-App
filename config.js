@@ -7,6 +7,9 @@
 const SUPABASE_URL = "https://qawfwbppnbnskxlkwstu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_EbKZkPjtT8rwkEdw3oVRCg_mBJJ_gNJ";
 
+// 🔌 Initialisation de Supabase (Obligatoire pour parler à la base de données)
+const supabaseApp = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const agenceClients = {
     
     // 🔴 CLIENT 1 : LE BISTROT PARIS
@@ -103,4 +106,63 @@ function appliquerConfig() {
     document.querySelectorAll('.texte-recompense').forEach(el => el.innerHTML = config.recompense);
 
     return config;
+}
+
+/**
+ * 🚀 NOUVEAU : LE MOTEUR D'AJOUT DE POINTS
+ * Adapté à la nouvelle base de données (Table 'clients' + Table 'points')
+ */
+async function validerScan(emailClient) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const restoID = urlParams.get('resto') || "default";
+    const config = agenceClients[restoID] || agenceClients["default"];
+
+    if (config.id === "default") return { success: false, message: "Restaurant non reconnu." };
+
+    try {
+        // ÉTAPE 1 : Vérifier si le client existe dans la table 'clients', sinon le créer discrètement
+        const { data: exist } = await supabaseApp.from('clients').select('email').eq('email', emailClient).single();
+        if (!exist) {
+            await supabaseApp.from('clients').insert({ 
+                email: emailClient, 
+                restaurant_origine: config.id 
+            });
+        }
+
+        // ÉTAPE 2 : Sécurité Anti-Fraude (Vérifier la date de son dernier passage dans CE resto)
+        const { data: dernierPoint } = await supabaseApp
+            .from('points')
+            .select('date_ajout')
+            .eq('email_client', emailClient)
+            .eq('restaurant_id', config.id)
+            .order('date_ajout', { ascending: false })
+            .limit(1);
+
+        if (dernierPoint && dernierPoint.length > 0) {
+            const derniereDate = new Date(dernierPoint[0].date_ajout);
+            const heuresEcoulees = (new Date() - derniereDate) / (1000 * 60 * 60);
+            
+            // Si le délai n'est pas respecté, on bloque l'ajout
+            if (heuresEcoulees < config.delaiAntiFraudeHeures) {
+                const attente = Math.ceil(config.delaiAntiFraudeHeures - heuresEcoulees);
+                throw new Error(`Anti-fraude : Vous devez attendre encore ${attente} heures.`);
+            }
+        }
+
+        // ÉTAPE 3 : Ajouter un point dans la table 'points'
+        const { error: insertError } = await supabaseApp
+            .from('points')
+            .insert({ 
+                email_client: emailClient, 
+                restaurant_id: config.id, 
+                montant_points: 1 
+            });
+
+        if (insertError) throw insertError;
+
+        return { success: true, message: "✅ +1 Point ajouté avec succès !" };
+
+    } catch (err) {
+        return { success: false, message: err.message || "Une erreur est survenue." };
+    }
 }
