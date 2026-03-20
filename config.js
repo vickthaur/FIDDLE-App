@@ -22,7 +22,7 @@ const agenceClients = {
         
         // 🛡️ Sécurité Anti-Fraude 
         // ⚠️ Astuce Dev : Mets '0.03' (2 min) pendant tes tests, puis remets '12' pour la prod 
-        delaiAntiFraudeHeures: 12, // Verrouille le compte : 12 heures d'attente requises entre deux scans 
+        delaiAntiFraudeHeures: 0.03, // Verrouille le compte : 12 heures d'attente requises entre deux scans 
         
         // 🔗 Liens Brevo & Externes 
         formInscription: "https://9d65705b.sibforms.com/serve/MUIFANfE1Ud8qtliFwPa28l2_ezu8uq3LYTQgyIt1FJdCu6ADCk_qAvGFPQSFp6HtEVLnsSSBWPY0iWuOOLkQD9PtOzEg4zLN0fuwTKabJS3y5yW2LPzsf2FhbihtwWgWsAsrIamq8lCQvUuxIOb6Cn6zN8x4QyFFwDvc_x03QZONNextkyrknz6Uqew8VmYb2VoF5aYAXjhiNuf6A==",
@@ -44,7 +44,7 @@ const agenceClients = {
         
         // 🛡️ Sécurité Anti-Fraude 
         // ⚠️ Astuce Dev : Mets '0.03' (2 min) pendant tes tests, puis remets '8' pour la prod 
-        delaiAntiFraudeHeures: 0.03, // Verrouille le compte : 8 heures d'attente requises entre deux scans 
+        delaiAntiFraudeHeures: 8, // Verrouille le compte : 8 heures d'attente requises entre deux scans 
         
         // 🔗 Liens Brevo & Externes 
         formInscription: "https://9d65705b.sibforms.com/serve/MUIFAPNZrGyP3i0xNF-FdppNziEkhvnAiLtRY8uUfol3hxIyq6VHE11ofNd5fjQp_Iq7tjv6nklXAhjOPj_Le1u6Wxz_U2NCQLtoBMgkuGrjRNvCwMzFg7KcWEyXIcW-JPoDtL2QizWiwcOJl5-G96lbhakbnyeJT1cxI_8ZV4SVOfBt8CDOHTGIi-KdJSAAPTHMADTN5Gyt8PgqdA==",
