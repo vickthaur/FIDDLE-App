@@ -124,92 +124,90 @@
         </div>
     </div>
 
-    <script>
-        // 1. Initialisation
-        const config = appliquerConfig();
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+   <script>
+    // 1. Initialisation
+    const config = appliquerConfig(); // Récupère les infos de config.js
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const email = urlParams.get('email');
+
+    // 2. Moteur d'affichage
+    function actualiserAffichage(points, prenom) {
+        document.getElementById('user-prenom').innerText = prenom;
         
-        const urlParams = new URLSearchParams(window.location.search);
-        const email = urlParams.get('email');
+        const ptsElement = document.getElementById('user-points');
+        ptsElement.innerText = points;
+        ptsElement.classList.remove('loading-pulse');
+        
+        // Calcul du pourcentage pour la barre
+        const pourcentage = (points / config.seuilPoints) * 100;
+        document.getElementById('barre-progression').style.width = Math.min(pourcentage, 100) + "%";
 
-        // 2. Moteur d'affichage
-        function actualiserAffichage(points, prenom) {
-            document.getElementById('user-prenom').innerText = prenom;
+        const phraseInfo = document.getElementById('phrase-info');
+        const btnGoogle = document.getElementById('btn-google');
+
+        if (points < config.seuilPoints) {
+            phraseInfo.innerHTML = `Plus que <strong>${config.seuilPoints - points} points</strong> avant votre cadeau !<br><span style="font-size:12px; color:var(--primary);">${config.recompense}</span>`;
+        } else {
+            phraseInfo.innerHTML = `🎉 <strong>CADEAU DÉBLOQUÉ !</strong><br><span style="font-size:13px;">Montrez cet écran au serveur.</span>`;
+            phraseInfo.style.color = "var(--primary)";
             
-            const ptsElement = document.getElementById('user-points');
-            ptsElement.innerText = points;
-            ptsElement.classList.remove('loading-pulse');
-            
-            // Animation de la barre
-            const pourcentage = (points / config.seuilPoints) * 100;
-            document.getElementById('barre-progression').style.width = Math.min(pourcentage, 100) + "%";
+            if (config.lienAvisGoogle) {
+                btnGoogle.style.display = "block";
+                btnGoogle.href = config.lienAvisGoogle;
+            }
+        }
+    }
 
-            // Gestion de l'état (En cours VS Cadeau)
-            const phraseInfo = document.getElementById('phrase-info');
-            const btnGoogle = document.getElementById('btn-google');
+    // 3. Récupération des données dans TA table 'clients'
+    async function chargerDonnees() {
+        if (!email) {
+            document.getElementById('phrase-info').innerHTML = "<span style='color:#ef4444;'>Lien invalide (Email manquant)</span>";
+            return;
+        }
 
-            if (points < config.seuilPoints) {
-                phraseInfo.innerHTML = `Plus que <strong>${config.seuilPoints - points} points</strong> avant votre cadeau !<br><span style="font-size:12px; color:var(--primary);">${config.recompense}</span>`;
-            } else {
-                phraseInfo.innerHTML = `🎉 <strong>CADEAU DÉBLOQUÉ !</strong><br><span style="font-size:13px;">Montrez cet écran au serveur.</span>`;
-                phraseInfo.style.color = "var(--primary)";
+        // Génération du QR code
+        new QRCode(document.getElementById("qrcode"), {
+            text: email,
+            width: 140, height: 140,
+            colorDark : "#0f172a", colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+
+        try {
+            // ON DÉTERMINE LA COLONNE À LIRE (Villa ou Bistrot)
+            // Si l'ID du resto est 'villa_saint_antoine', on lit 'points_villa'
+            const nomColonne = (config.id === 'villa_saint_antoine') ? 'points_villa' : 'points_bistrot';
+
+            // REQUÊTE UNIQUE : On récupère le prénom ET les points du client
+            const { data: client, error } = await _supabase
+                .from('clients')
+                .select(`prenom, ${nomColonne}`)
+                .eq('email', email)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (client) {
+                const pointsClient = client[nomColonne] || 0;
+                const prenomClient = client.prenom || "Client";
                 
-                // Hack Marketing : On affiche le bouton Google si le client a gagné !
-                if (config.lienAvisGoogle) {
-                    btnGoogle.style.display = "block";
-                    btnGoogle.href = config.lienAvisGoogle;
-                }
-            }
-        }
-
-        // 3. Récupération des données depuis les DEUX tables Supabase
-        async function chargerDonnees() {
-            if (!email) {
-                document.getElementById('phrase-info').innerHTML = "<span style='color:#ef4444;'>Erreur : Lien invalide (Email manquant)</span>";
-                document.getElementById('user-points').classList.remove('loading-pulse');
-                return;
-            }
-
-            // Génération immédiate du QR code 
-            new QRCode(document.getElementById("qrcode"), {
-                text: email,
-                width: 140, height: 140,
-                colorDark : "#0f172a", colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-
-            try {
-                let prenomFinal = "Client";
-                let pointsFinaux = 0;
-
-                // REQUÊTE A : On cherche son prénom dans le CRM global (table 'clients')
-                const { data: clientData } = await _supabase.from('clients').select('prenom').eq('email', email).maybeSingle();
-                if (clientData && clientData.prenom) {
-                    prenomFinal = clientData.prenom;
-                }
-
-                // REQUÊTE B : On cherche ses points pour CE restaurant précis (table 'points')
-                const { data: pointsData } = await _supabase.from('points')
-                    .select('total_points')
-                    .eq('client_email', email)
-                    .eq('restaurant_id', config.id)
-                    .maybeSingle();
-
-                if (pointsData) {
-                    pointsFinaux = pointsData.total_points;
-                }
-
-                // Affichage final
-                actualiserAffichage(pointsFinaux, prenomFinal);
-
-            } catch (err) {
-                console.error("Erreur de synchronisation:", err);
+                // On met à jour l'écran
+                actualiserAffichage(pointsClient, prenomClient);
+            } else {
+                // Client pas encore en base de données
                 actualiserAffichage(0, "Client");
-                document.getElementById('phrase-info').innerText = "Connexion faible. Données non garanties.";
+                document.getElementById('phrase-info').innerHTML = "Bienvenue ! Votre carte est activée.";
             }
-        }
 
-        chargerDonnees();
-    </script>
+        } catch (err) {
+            console.error("Erreur de synchronisation:", err);
+            actualiserAffichage(0, "Client");
+        }
+    }
+
+    chargerDonnees();
+</script>
 </body>
 </html>
