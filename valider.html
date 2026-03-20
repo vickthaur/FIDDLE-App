@@ -3,19 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validation - FIDDLE App</title>
+    <title>Validation | FYDELIO</title>
     
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #1e293b; }
+        :root { 
+            --primary: #0F766E; /* Vert FYDELIO */
+            --bg-dark: #0f172a;
+        }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #0f172a; color: white; 
+            background-color: var(--bg-dark); color: white; 
             display: flex; justify-content: center; align-items: center; 
             height: 100vh; text-align: center; 
             transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -26,7 +29,7 @@
             padding: 40px; background: rgba(255,255,255,0.05);
             border-radius: 32px; border: 1px solid rgba(255,255,255,0.1);
             max-width: 340px; width: 100%;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
             backdrop-filter: blur(10px);
             transform: scale(0.95); opacity: 0;
             animation: popIn 0.5s forwards cubic-bezier(0.16, 1, 0.3, 1);
@@ -34,20 +37,30 @@
 
         @keyframes popIn { to { transform: scale(1); opacity: 1; } }
 
+        .brand-tag {
+            font-size: 10px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.4);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
         .icon { font-size: 55px; margin-bottom: 15px; display: block; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2)); }
         h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; }
         p { color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 600; line-height: 1.4; }
         
         .score-display { 
-            font-size: 70px; font-weight: 800; color: white; 
+            font-size: 80px; font-weight: 800; color: white; 
             margin: 20px 0 10px 0; display: none;
             text-shadow: 0 10px 30px rgba(0,0,0,0.3);
             line-height: 1;
         }
 
-        body.success { background-color: #10b981; } 
+        /* États de couleur FYDELIO */
+        body.success { background-color: #0F766E; } /* Émeraude Success */
         body.error { background-color: #ef4444; }   
-        body.reward { background-color: #f59e0b; }  
+        body.reward { background-color: #f59e0b; }  /* Ambre pour le cadeau */
         body.warning { background-color: #f97316; } 
 
         #hidden_iframe_brevo { display: none; width: 0; height: 0; border: none; }
@@ -57,9 +70,10 @@
 <body>
 
     <div class="validation-box" id="ui-box">
+        <div class="brand-tag">Système FYDELIO</div>
         <span class="icon" id="ui-icon">⏳</span>
-        <h1 id="ui-title">Vérification...</h1>
-        <p id="ui-text">Sécurisation des données</p>
+        <h1 id="ui-title">Analyse...</h1>
+        <p id="ui-text">Mise à jour du profil client</p>
         <div class="score-display" id="ui-score">0</div>
     </div>
 
@@ -72,7 +86,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const config = appliquerConfig();
+            const config = appliquerConfig(); // Initialisation via config.js (FYDELIO)
             const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             const params = new URLSearchParams(window.location.search);
             const email = params.get('email');
@@ -93,15 +107,15 @@
             async function traiterScan() {
                 if (!email) {
                     document.body.classList.add('error');
-                    uiIcon.innerText = "❌"; uiTitle.innerText = "Erreur"; uiText.innerText = "Email manquant.";
+                    uiIcon.innerText = "❌"; uiTitle.innerText = "Erreur"; uiText.innerText = "QR Code non reconnu.";
                     return retourScanner(3000);
                 }
 
                 try {
-                    // --- 1. DÉTERMINER LA COLONNE (Villa ou Bistrot) ---
+                    // 1. Détermination de la colonne de points
                     const maColonne = (config.id === 'villa_saint_antoine') ? 'points_villa' : 'points_bistrot';
 
-                    // --- 2. VÉRIFICATION CRM (Table clients) ---
+                    // 2. Recherche du client
                     const { data: client, error: fetchError } = await _supabase
                         .from('clients')
                         .select('*')
@@ -110,30 +124,29 @@
 
                     if (fetchError) throw fetchError;
 
-                    // --- 3. GESTION DU SCORE ---
                     let scoreActuel = 0;
 
                     if (!client) {
-                        // Création si nouveau
+                        // Création automatique si nouveau (Sécurité FYDELIO)
                         await _supabase.from('clients').insert([{ email: email, prenom: 'Client', restaurant_origine: config.id }]);
                         scoreActuel = 0;
                     } else {
                         scoreActuel = client[maColonne] || 0;
                     }
 
-                    // --- 4. CALCUL DU NOUVEAU SCORE ---
+                    // 3. Calcul de la fidélité
                     let nouveauScore;
                     let estCadeau = false;
 
                     if (scoreActuel >= config.seuilPoints) {
-                        nouveauScore = 1; 
+                        nouveauScore = 1; // On repart à 1 après avoir consommé le cadeau
                         estCadeau = true;
                     } else {
                         nouveauScore = scoreActuel + 1;
                         if (nouveauScore === config.seuilPoints) estCadeau = true; 
                     }
 
-                    // --- 5. SAUVEGARDE (Table clients) ---
+                    // 4. Mise à jour Supabase
                     const { error: updateError } = await _supabase
                         .from('clients')
                         .update({ [maColonne]: nouveauScore })
@@ -141,24 +154,24 @@
 
                     if (updateError) throw updateError;
 
-                    // --- 6. DÉCLENCHEMENT BREVO (Carte Wallet) ---
+                    // 5. Synchro Brevo (Emailing / Wallet)
                     if (config.formScan && config.formScan !== "#") {
                         brevoForm.action = config.formScan;
                         brevoEmailInput.value = email;
                         brevoForm.submit(); 
                     }
 
-                    // --- 7. AFFICHAGE FINAL ---
+                    // 6. UI de succès FYDELIO
                     if (estCadeau) {
                         document.body.classList.add('reward');
                         uiIcon.innerText = "🎁";
                         uiTitle.innerText = "CADEAU !";
-                        uiText.innerText = "Offrez la récompense !";
+                        uiText.innerText = "Récompense débloquée pour le client.";
                     } else {
                         document.body.classList.add('success');
                         uiIcon.innerText = "✅";
-                        uiTitle.innerText = "Validé !";
-                        uiText.innerText = "Point ajouté avec succès.";
+                        uiTitle.innerText = "VALIDÉ";
+                        uiText.innerText = "Point ajouté au compte FYDELIO.";
                     }
 
                     uiScore.style.display = "block";
@@ -167,11 +180,11 @@
                     retourScanner(3500);
 
                 } catch (err) {
-                    console.error("Détail de l'erreur:", err);
+                    console.error("Erreur de traitement FYDELIO:", err);
                     document.body.classList.add('error');
                     uiIcon.innerText = "⚠️"; 
-                    uiTitle.innerText = "Erreur réseau"; 
-                    uiText.innerText = "Problème de connexion à la base.";
+                    uiTitle.innerText = "Erreur Sync"; 
+                    uiText.innerText = "Impossible de joindre la base FYDELIO.";
                     retourScanner(4000);
                 }
             }
