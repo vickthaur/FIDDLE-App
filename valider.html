@@ -93,17 +93,15 @@
             async function traiterScan() {
                 if (!email) {
                     document.body.classList.add('error');
-                    uiIcon.innerText = "❌"; uiTitle.innerText = "Erreur"; uiText.innerText = "QR Code illisible ou email manquant.";
+                    uiIcon.innerText = "❌"; uiTitle.innerText = "Erreur"; uiText.innerText = "Email manquant.";
                     return retourScanner(3000);
                 }
 
                 try {
-                    // 1. DÉTERMINER LA COLONNE DE POINTS (Villa ou Bistrot)
-                    // On utilise la colonne définie dans config.js (points_villa ou points_bistrot)
-                    const maColonne = config.colonnePoints;
+                    // --- 1. DÉTERMINER LA COLONNE (Villa ou Bistrot) ---
+                    const maColonne = (config.id === 'villa_saint_antoine') ? 'points_villa' : 'points_bistrot';
 
-                    // 2. VÉRIFICATION ET LECTURE DANS LA TABLE 'clients'
-                    // On récupère tout le profil du client d'un coup
+                    // --- 2. VÉRIFICATION CRM (Table clients) ---
                     const { data: client, error: fetchError } = await _supabase
                         .from('clients')
                         .select('*')
@@ -112,45 +110,30 @@
 
                     if (fetchError) throw fetchError;
 
+                    // --- 3. GESTION DU SCORE ---
                     let scoreActuel = 0;
 
-                    // Si le client n'existe pas, on le crée proprement
                     if (!client) {
-                        await _supabase.from('clients').insert([{ 
-                            email: email, 
-                            prenom: 'Client', 
-                            restaurant_origine: config.id,
-                            [maColonne]: 0 // Il va prendre +1 juste après
-                        }]);
+                        // Création si nouveau
+                        await _supabase.from('clients').insert([{ email: email, prenom: 'Client', restaurant_origine: config.id }]);
+                        scoreActuel = 0;
                     } else {
                         scoreActuel = client[maColonne] || 0;
                     }
 
-                    // 3. BOUCLIER ANTI-FRAUDE (On utilise 'created_at' ou 'updated_at' de la table clients)
-                    // Note : Pour une précision par resto, il faudrait une colonne 'derniere_visite_villa', 
-                    // mais on va rester sur la logique de sécurité de base pour ne pas bloquer.
-                    if (client && client.created_at && config.delaiAntiFraudeHeures > 0) {
-                        const derniereAction = new Date(client.created_at); // On simule avec la date de la ligne
-                        const maintenant = new Date();
-                        const heuresEcoulees = (maintenant - derniereAction) / (1000 * 60 * 60);
-
-                        // Si tu veux réactiver l'anti-fraude strict, il faudra ajouter une colonne date à ta table.
-                        // Pour l'instant on laisse passer pour valider le système de points.
-                    }
-
-                    // 4. CALCUL DU NOUVEAU SCORE
+                    // --- 4. CALCUL DU NOUVEAU SCORE ---
                     let nouveauScore;
                     let estCadeau = false;
 
                     if (scoreActuel >= config.seuilPoints) {
-                        nouveauScore = 1; // On reset à 1 après le cadeau
+                        nouveauScore = 1; 
                         estCadeau = true;
                     } else {
                         nouveauScore = scoreActuel + 1;
                         if (nouveauScore === config.seuilPoints) estCadeau = true; 
                     }
 
-                    // 5. SAUVEGARDE DANS SUPABASE (Table 'clients')
+                    // --- 5. SAUVEGARDE (Table clients) ---
                     const { error: updateError } = await _supabase
                         .from('clients')
                         .update({ [maColonne]: nouveauScore })
@@ -158,19 +141,19 @@
 
                     if (updateError) throw updateError;
 
-                    // 🚀 6. DÉCLENCHEMENT BREVO (Lien avec la carte Wallet)
+                    // --- 6. DÉCLENCHEMENT BREVO (Carte Wallet) ---
                     if (config.formScan && config.formScan !== "#") {
                         brevoForm.action = config.formScan;
                         brevoEmailInput.value = email;
                         brevoForm.submit(); 
                     }
 
-                    // 7. AFFICHAGE DU RÉSULTAT AU SERVEUR
+                    // --- 7. AFFICHAGE FINAL ---
                     if (estCadeau) {
                         document.body.classList.add('reward');
                         uiIcon.innerText = "🎁";
                         uiTitle.innerText = "CADEAU !";
-                        uiText.innerText = "Offrez la récompense au client !";
+                        uiText.innerText = "Offrez la récompense !";
                     } else {
                         document.body.classList.add('success');
                         uiIcon.innerText = "✅";
@@ -184,10 +167,12 @@
                     retourScanner(3500);
 
                 } catch (err) {
-                    console.error("Erreur critique:", err);
+                    console.error("Détail de l'erreur:", err);
                     document.body.classList.add('error');
-                    uiIcon.innerText = "⚠️"; uiTitle.innerText = "Erreur réseau"; uiText.innerText = "Problème de connexion à la base.";
-                    retourScanner(3500);
+                    uiIcon.innerText = "⚠️"; 
+                    uiTitle.innerText = "Erreur réseau"; 
+                    uiText.innerText = "Problème de connexion à la base.";
+                    retourScanner(4000);
                 }
             }
 
