@@ -161,71 +161,63 @@
 
     <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const config = appliquerConfig();
-            const form = document.getElementById('form-inscription');
-            const btn = document.getElementById('btn-submit');
-            const visualIcon = document.getElementById('visual-icon');
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const config = appliquerConfig();
+        const form = document.getElementById('form-inscription');
+        const btn = document.getElementById('btn-submit');
+        const visualIcon = document.getElementById('visual-icon');
 
-            if (config.id !== "default") {
-                form.action = config.formInscription;
-                if (config.id === "villa_saint_antoine") visualIcon.innerHTML = "✨";
-                if (config.id === "bistrot") visualIcon.innerHTML = "🍴";
-            }
+        if (config.id !== "default") {
+            form.action = config.formInscription;
+            if (config.id === "villa_saint_antoine") visualIcon.innerHTML = "✨";
+            if (config.id === "bistrot") visualIcon.innerHTML = "🍴";
+        }
 
-            form.addEventListener('submit', async function(e) {
-                // 1. OBLIGATOIRE : On met l'envoi du formulaire sur "Pause" pour éviter les bugs
-                e.preventDefault(); 
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault(); // On stoppe pour envoyer à Supabase d'abord
+            
+            btn.innerHTML = '<span style="opacity: 0.8;">Chargement...</span>';
+            btn.disabled = true;
+
+            const emailVal = document.getElementById('email').value.trim().toLowerCase();
+            const prenomVal = document.getElementById('prenom').value.trim();
+            const nomVal = document.getElementById('nom').value.trim();
+            const smsVal = document.getElementById('sms').value.trim();
+            const annivVal = document.getElementById('anniversaire').value.trim();
+
+            try {
+                const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 
-                btn.innerHTML = '<span style="opacity: 0.8;">Synchronisation...</span>';
-                btn.disabled = true;
+                // 1. ENVOI AU CRM SUPABASE
+                // Le trigger SQL s'occupera tout seul de mettre 1 point au bon resto
+                await _supabase.from('clients').upsert({ 
+                    email: emailVal, 
+                    prenom: prenomVal,
+                    nom: nomVal,
+                    telephone: smsVal,
+                    date_anniversaire: annivVal,
+                    restaurant_origine: config.id
+                });
 
-                const emailVal = document.getElementById('email').value.trim().toLowerCase();
-                const prenomVal = document.getElementById('prenom').value.trim();
-                const nomVal = document.getElementById('nom').value.trim();
-                const smsVal = document.getElementById('sms').value.trim();
-                const annivVal = document.getElementById('anniversaire').value.trim();
-
-                try {
-                    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                    
-                    // CRM Supabase
-                    await _supabase.from('clients').upsert({ 
-                        email: emailVal, 
-                        prenom: prenomVal,
-                        nom: nomVal,
-                        telephone: smsVal,
-                        date_anniversaire: annivVal,
-                        restaurant_origine: config.id
-                    });
-
-                    // Points
-                    const { data: hasPoints } = await _supabase.from('points')
-                        .select('id').eq('client_email', emailVal).eq('restaurant_id', config.id).maybeSingle();
-
-                    if (!hasPoints) {
-                        await _supabase.from('points').insert([{
-                            client_email: emailVal,
-                            restaurant_id: config.id,
-                            total_points: config.pointsBienvenue || 0
-                        }]);
-                    }
-
-                } catch (err) {
-                    console.error("Erreur CRM Supabase:", err);
-                }
-
-                // 2. ON DÉBLOQUE L'ENVOI ! Le formulaire part maintenant dans l'Iframe
+                // 2. ENVOI À BREVO
+                // Maintenant que Supabase est OK, on lance l'envoi réel du formulaire
                 form.submit();
 
-                // 3. Basculement visuel vers l'écran de succès
+                // 3. AFFICHAGE DU SUCCÈS
                 setTimeout(() => {
                     document.getElementById('form-state').style.display = 'none';
                     document.getElementById('success-state').style.display = 'block';
-                }, 400); // On laisse 400ms pour que l'iframe charge la page Brevo
-            });
+                }, 500);
+
+            } catch (err) {
+                console.error("Erreur critique :", err);
+                alert("Erreur de connexion. Veuillez réessayer.");
+                btn.disabled = false;
+                btn.innerHTML = "S'INSCRIRE 🚀";
+            }
         });
-    </script>
+    });
+</script>
 </body>
 </html>
