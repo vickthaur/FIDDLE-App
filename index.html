@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fiddle Bro's | Inscription Premium</title>
+    <title>FYDELIO | Inscription Premium</title>
     
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,8 +12,8 @@
     
     <style>
         :root {
-            --primary: #1e293b; 
-            --primary-glow: rgba(30, 41, 59, 0.15);
+            --primary: #0F766E; /* Vert FYDELIO */
+            --primary-glow: rgba(15, 118, 110, 0.15);
             --success-color: #10b981;
             --bg-color: #f8fafc;
             --input-bg: #f1f5f9;
@@ -35,6 +35,16 @@
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); 
             text-align: center; border: 1px solid rgba(0,0,0,0.04);
             position: relative; overflow: hidden;
+        }
+
+        .brand-badge {
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            opacity: 0.7;
         }
 
         .logo-placeholder { font-size: 52px; margin-bottom: 18px; display: block; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.05)); }
@@ -85,6 +95,7 @@
 
     <div class="card">
         <div id="form-state">
+            <div class="brand-badge">Plateforme FYDELIO</div>
             <div id="visual-icon" class="logo-placeholder">🎁</div>
             <div class="restaurant-tag nom-resto">Chargement...</div>
             <h1>Bienvenue</h1>
@@ -105,7 +116,7 @@
                         <input type="email" id="email" name="EMAIL" placeholder="jean.dupont@mail.com" required>
                     </div>
                     <div class="form-group">
-                        <label>SMS *</label>
+                        <label>MOBILE (SMS) *</label>
                         <input type="text" id="sms" name="SMS" placeholder="06..." required>
                     </div>
                     <div class="form-group">
@@ -115,38 +126,38 @@
                 </div>
                 <input type="hidden" name="email_address_check" value="">
                 <input type="hidden" name="locale" value="fr">
-                <button type="submit" id="btn-submit">S'INSCRIRE 🚀</button>
+                <button type="submit" id="btn-submit">ACTIVER MA CARTE 🚀</button>
             </form>
         </div>
 
         <div id="success-state">
-            <div class="success-icon">💌</div>
-            <h2 style="font-size: 26px; font-weight: 800; color: var(--success-color);">C'est envoyé !</h2>
-            <p class="subtitle">Vos informations sont enregistrées.<br><strong>Vérifiez vos emails</strong>.</p>
-            <button onclick="window.location.href = window.location.href;" style="background: #f8fafc; color: #64748b; border: 2px solid #f1f5f9;">Retourner à l'accueil</button>
+            <div class="success-icon">✨</div>
+            <h2 style="font-size: 26px; font-weight: 800; color: var(--success-color);">C'est validé !</h2>
+            <p class="subtitle">Votre compte <strong>FYDELIO</strong> est créé.<br>Votre premier point vous attend.</p>
+            <button onclick="window.location.href = window.location.href;" style="background: #f8fafc; color: #64748b; border: 2px solid #f1f5f9;">Retour</button>
         </div>
 
-        <div class="footer">POWERED BY <strong>FIDDLE BRO'S</strong></div>
+        <div class="footer">SECURED BY <strong>FYDELIO</strong></div>
     </div>
 
     <iframe name="hidden_iframe" id="hidden_iframe"></iframe>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const config = appliquerConfig();
+            const config = appliquerConfig(); // Utilise le moteur FYDELIO de config.js
             const form = document.getElementById('form-inscription');
             const btn = document.getElementById('btn-submit');
             const visualIcon = document.getElementById('visual-icon');
 
             if (config.id !== "default") {
                 form.action = config.formInscription;
-                if (config.id === "villa_saint_antoine") visualIcon.innerHTML = "✨";
-                if (config.id === "bistrot") visualIcon.innerHTML = "🍴";
+                if (config.id === "villa_saint_antoine") visualIcon.innerHTML = "🏛️";
+                if (config.id === "bistrot") visualIcon.innerHTML = "🍷";
             }
 
             form.addEventListener('submit', async function(e) {
                 e.preventDefault(); 
-                btn.innerHTML = 'Synchronisation...';
+                btn.innerHTML = 'Initialisation FYDELIO...';
                 btn.disabled = true;
 
                 const emailVal = document.getElementById('email').value.trim().toLowerCase();
@@ -158,8 +169,7 @@
                 try {
                     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     
-                    // 1. On enregistre tout dans la table unique 'clients'
-                    // Le point de bienvenue (1) sera mis par le Trigger SQL de Supabase
+                    // Enregistrement dans la table unique
                     await _supabase.from('clients').upsert({ 
                         email: emailVal, 
                         prenom: prenomVal,
@@ -169,18 +179,17 @@
                         restaurant_origine: config.id
                     });
 
-                    // 2. On envoie à Brevo (via l'iframe)
+                    // Envoi Brevo
                     form.submit();
 
-                    // 3. Affichage succès
+                    // UI Succès
                     setTimeout(() => {
                         document.getElementById('form-state').style.display = 'none';
                         document.getElementById('success-state').style.display = 'block';
                     }, 400);
 
                 } catch (err) {
-                    console.error("Erreur Sync:", err);
-                    // Même si Supabase rate, on tente Brevo pour ne pas perdre le client
+                    console.error("FYDELIO Sync Error:", err);
                     form.submit();
                 }
             });
