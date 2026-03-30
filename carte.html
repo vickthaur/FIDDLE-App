@@ -98,25 +98,40 @@
         
         .instructions { font-size: 12px; color: #64748b; line-height: 1.5; font-weight: 500; }
 
-        /* NOUVEAU : CSS BOUTONS WALLET */
+        /* CSS BOUTONS WALLET */
         .wallet-actions { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
         .wallet-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 12px; font-weight: 700; }
         .wallet-buttons { display: flex; gap: 10px; justify-content: center; }
         .wallet-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: #000; color: white; text-decoration: none; font-size: 12px; font-weight: 600; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
         .wallet-btn img { width: 20px; height: 20px; }
-        .wallet-btn:hover { background: #1e293b; border-color: var(--primary); }
-
+        
         /* CSS BIENTÔT DISPONIBLE */
-        .disabled-btn {
-            opacity: 0.5;
-            cursor: not-allowed;
-            border: none;
+        .disabled-btn { opacity: 0.5; cursor: pointer; border: none; }
+        .disabled-btn:hover { background: #1e293b; border-color: rgba(255,255,255,0.2); }
+
+        /* NOUVEAU : LE POPUP FYDELIO PRO */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s ease;
         }
-        .disabled-btn:hover {
-            background: #000; /* Revenir au fond noir par défaut */
-            border-color: rgba(255,255,255,0.2); /* Revenir à la bordure par défaut */
-            transform: none; /* Ne pas bouger au survol */
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-box {
+            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px; padding: 30px; width: 90%; max-width: 340px;
+            text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            transform: scale(0.9); transition: transform 0.3s ease;
         }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        .modal-title { color: white; font-size: 20px; font-weight: 800; margin-bottom: 10px; }
+        .modal-text { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+        .modal-btn-close {
+            background: var(--primary); color: white; border: none; padding: 14px 25px;
+            border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px;
+            transition: 0.3s;
+        }
+        .modal-btn-close:hover { filter: brightness(1.2); }
 
         .btn-avis {
             display: none; width: 100%; background: var(--primary); color: white; 
@@ -130,12 +145,7 @@
         @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
 
         /* Petit footer app */
-        .app-footer {
-            margin-top: 25px;
-            font-size: 10px;
-            color: #475569;
-            font-weight: 600;
-        }
+        .app-footer { margin-top: 25px; font-size: 10px; color: #475569; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -163,11 +173,11 @@
             <div class="wallet-actions">
                 <p class="wallet-title">Bientôt dans votre Wallet</p>
                 <div class="wallet-buttons">
-                    <button class="wallet-btn disabled-btn" onclick="alert('L\'intégration Apple Wallet et Google Wallet sera disponible très prochainement ! En attendant, ajoutez cette page à votre écran d\'accueil.')">
+                    <button class="wallet-btn disabled-btn" onclick="openWalletModal()">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg" alt="Apple Wallet" style="width:16px; height:16px;">
                         Apple
                     </button>
-                    <button class="wallet-btn disabled-btn" onclick="alert('L\'intégration Apple Wallet et Google Wallet sera disponible très prochainement ! En attendant, ajoutez cette page à votre écran d\'accueil.')">
+                    <button class="wallet-btn disabled-btn" onclick="openWalletModal()">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" alt="Google Wallet" style="width:20px; height:20px;">
                         Google
                     </button>
@@ -180,12 +190,19 @@
         <div class="app-footer">Technologie de fidélisation sécurisée v4.0</div>
     </div>
 
+    <div class="modal-overlay" id="walletModal">
+        <div class="modal-box">
+            <h3 class="modal-title">FYDELIO</h3>
+            <p class="modal-text">L'intégration Wallet native arrive très prochainement !<br><br>En attendant, ajoutez simplement cette page à l'écran d'accueil de votre téléphone pour y accéder en un clic.</p>
+            <button class="modal-btn-close" onclick="closeWalletModal()">J'ai compris</button>
+        </div>
+    </div>
+
    <script>
     // 1. Initialisation
     const config = appliquerConfig(); 
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    // On met à jour la couleur primaire selon la config du resto
     if(config.couleur) {
         document.documentElement.style.setProperty('--primary', config.couleur);
     }
@@ -193,7 +210,20 @@
     const urlParams = new URLSearchParams(window.location.search);
     const email = urlParams.get('email');
 
-    // 2. Moteur d'affichage
+    // 2. Fonctions du Popup Wallet
+    function openWalletModal() {
+        const modal = document.getElementById('walletModal');
+        modal.style.display = 'flex';
+        setTimeout(() => modal.classList.add('active'), 10); // Petit délai pour l'animation
+    }
+
+    function closeWalletModal() {
+        const modal = document.getElementById('walletModal');
+        modal.classList.remove('active');
+        setTimeout(() => modal.style.display = 'none', 300); // Attend la fin de l'animation
+    }
+
+    // 3. Moteur d'affichage
     function actualiserAffichage(points, prenom) {
         document.getElementById('user-prenom').innerText = prenom;
         
@@ -220,14 +250,13 @@
         }
     }
 
-    // 3. Récupération des données
+    // 4. Récupération des données
     async function chargerDonnees() {
         if (!email) {
             document.getElementById('phrase-info').innerHTML = "<span style='color:#ef4444;'>Lien invalide (Email manquant)</span>";
             return;
         }
 
-        // On vide le QR code avant d'en recréer un pour éviter les doublons si ça se rafraîchit
         document.getElementById("qrcode").innerHTML = "";
         new QRCode(document.getElementById("qrcode"), {
             text: email,
@@ -264,10 +293,10 @@
 
     chargerDonnees();
 
-    // 4. NOUVEAU : ACTUALISATION AUTOMATIQUE (PWA)
+    // 5. ACTUALISATION AUTOMATIQUE (PWA)
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible") {
-            chargerDonnees(); // Recharge les points quand le client revient sur l'écran
+            chargerDonnees();
         }
     });
 </script>
