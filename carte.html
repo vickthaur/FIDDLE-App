@@ -113,9 +113,9 @@
             border: none;
         }
         .disabled-btn:hover {
-            background: #000;
-            border-color: rgba(255,255,255,0.2);
-            transform: none;
+            background: #000; /* Revenir au fond noir par défaut */
+            border-color: rgba(255,255,255,0.2); /* Revenir à la bordure par défaut */
+            transform: none; /* Ne pas bouger au survol */
         }
 
         .btn-avis {
@@ -164,11 +164,11 @@
                 <p class="wallet-title">Bientôt dans votre Wallet</p>
                 <div class="wallet-buttons">
                     <button class="wallet-btn disabled-btn" onclick="alert('L\'intégration Apple Wallet et Google Wallet sera disponible très prochainement ! En attendant, ajoutez cette page à votre écran d\'accueil.')">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b0/Apple_Wallet_Icon.svg" alt="Apple Wallet">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg" alt="Apple Wallet" style="width:16px; height:16px;">
                         Apple
                     </button>
                     <button class="wallet-btn disabled-btn" onclick="alert('L\'intégration Apple Wallet et Google Wallet sera disponible très prochainement ! En attendant, ajoutez cette page à votre écran d\'accueil.')">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Wallet_Icon.svg" alt="Google Wallet">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" alt="Google Wallet" style="width:20px; height:20px;">
                         Google
                     </button>
                 </div>
