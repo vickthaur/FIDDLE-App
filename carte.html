@@ -98,6 +98,14 @@
         
         .instructions { font-size: 12px; color: #64748b; line-height: 1.5; font-weight: 500; }
 
+        /* NOUVEAU : CSS BOUTONS WALLET */
+        .wallet-actions { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .wallet-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 12px; font-weight: 700; }
+        .wallet-buttons { display: flex; gap: 10px; justify-content: center; }
+        .wallet-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: #000; color: white; text-decoration: none; font-size: 12px; font-weight: 600; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; }
+        .wallet-btn img { width: 20px; height: 20px; }
+        .wallet-btn:hover { background: #1e293b; border-color: var(--primary); }
+
         .btn-avis {
             display: none; width: 100%; background: var(--primary); color: white; 
             text-decoration: none; padding: 15px; border-radius: 14px; 
@@ -140,6 +148,20 @@
             <div id="qrcode"></div>
             <p class="instructions">Présentez ce QR Code lors de votre passage<br>pour cumuler vos points.</p>
             
+            <div class="wallet-actions">
+                <p class="wallet-title">Ajouter à votre téléphone</p>
+                <div class="wallet-buttons">
+                    <a href="#" id="apple-wallet" class="wallet-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b0/Apple_Wallet_Icon.svg" alt="Apple Wallet">
+                        Apple
+                    </a>
+                    <a href="#" id="google-wallet" class="wallet-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/d/da/Google_Wallet_Icon.svg" alt="Google Wallet">
+                        Google
+                    </a>
+                </div>
+            </div>
+
             <a href="#" id="btn-google" class="btn-avis" target="_blank">⭐ Laissez-nous un avis</a>
         </div>
 
@@ -193,6 +215,8 @@
             return;
         }
 
+        // On vide le QR code avant d'en recréer un pour éviter les doublons si ça se rafraîchit
+        document.getElementById("qrcode").innerHTML = "";
         new QRCode(document.getElementById("qrcode"), {
             text: email,
             width: 140, height: 140,
@@ -227,6 +251,13 @@
     }
 
     chargerDonnees();
+
+    // 4. NOUVEAU : ACTUALISATION AUTOMATIQUE (PWA)
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            chargerDonnees(); // Recharge les points quand le client revient sur l'écran
+        }
+    });
 </script>
 </body>
 </html>
