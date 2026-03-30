@@ -2,7 +2,7 @@
  * 🧠 LE CERVEAU CENTRAL 
  */ 
 
-// 🔑 CLÉS API SUPABASE (Connexion directe et sécurisée) 
+// 🔑 CLÉS API SUPABASE
 const SUPABASE_URL = "https://qawfwbppnbnskxlkwstu.supabase.co"; 
 const SUPABASE_KEY = "sb_publishable_EbKZkPjtT8rwkEdw3oVRCg_mBJJ_gNJ"; 
 
@@ -11,9 +11,13 @@ const agenceClients = {
     // 🔴 CLIENT 1 : LE BISTROT PARIS 
     "bistrot": { 
         id: "bistrot",  
-        actif: true, // 🛑 Mets 'false' si le client ne paie plus ton agence (Kill Switch) 
+        actif: true, 
         nom: "Le Bistrot Paris", 
         couleur: "#e63946",  
+        
+        // 🛠️ CONFIGURATION DATABASE (Ajouté pour automatisation)
+        colonnePoints: "points_bistrot",
+        colonneSecu: "last_scan_bistrot",
         
         // ⚙️ Mécanique de fidélité 
         seuilPoints: 5, 
@@ -21,7 +25,7 @@ const agenceClients = {
         pointsBienvenue: 1, 
         
         // 🛡️ Sécurité Anti-Fraude 
-        delaiAntiFraudeHeures: 8, // Verrouillage temporaire (pour tests)
+        delaiAntiFraudeHeures: 8, 
         
         // 🔗 Liens Externes 
         formInscription: "https://9d65705b.sibforms.com/serve/MUIFAESstQ4kFjs5tSSEuAUb078K1PIdoNELBwJ7tLNuNoHf11B7lT3xWSCj01e8LU6zBl3BXuyVmK0K9Me9TqGZsy08pGdId-xDEyzGZyKVRCk7xtuKVsixH0tGiylUQVp9xq-StGMmJQdXnxKrCRE7YI9k_jOZxSVXa7GCvMhzOnfiKpgaqbx1lt2gQolqG2f6jNd-9IU4pBDQBw==",
@@ -35,6 +39,10 @@ const agenceClients = {
         actif: true, 
         nom: "Villa Saint Antoine", 
         couleur: "#c5a059",  
+        
+        // 🛠️ CONFIGURATION DATABASE (Ajouté pour automatisation)
+        colonnePoints: "points_villa",
+        colonneSecu: "last_scan_villa",
         
         // ⚙️ Mécanique de fidélité 
         seuilPoints: 10, 
@@ -50,12 +58,14 @@ const agenceClients = {
         lienAvisGoogle: "https://g.page/r/villa-exemple" 
     }, 
     
-    // ⚪ MODE NEUTRE (Sécurité de repli) 
+    // ⚪ MODE NEUTRE 
     "default": { 
         id: "default", 
         actif: false, 
         nom: "FYDELIO", 
         couleur: "#0F766E", 
+        colonnePoints: "points_default",
+        colonneSecu: "last_scan_default",
         seuilPoints: 10, 
         recompense: "Sélectionnez un établissement", 
         pointsBienvenue: 0, 
@@ -66,17 +76,11 @@ const agenceClients = {
     } 
 }; 
 
-/** * ⚙️ MOTEUR D'AFFICHAGE DYNAMIQUE 
- * Ne touche jamais à cette partie, elle fait le travail toute seule. 
- */ 
 function appliquerConfig() { 
     const urlParams = new URLSearchParams(window.location.search); 
     const restoID = urlParams.get('resto'); 
-
-    // 1. On charge le resto, ou le mode par défaut si introuvable 
     const config = agenceClients[restoID] || agenceClients["default"]; 
 
-    // 2. Vérification du Kill Switch FYDELIO 
     if (config.actif === false && config.id !== "default") { 
         document.body.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0f172a; color:white; font-family:sans-serif; text-align:center; padding:20px;"> 
             <div> 
@@ -89,11 +93,9 @@ function appliquerConfig() {
         throw new Error("Arrêt de l'application : Programme restaurant inactif."); 
     } 
 
-    // 3. Application des couleurs FYDELIO (Variables CSS) 
     document.documentElement.style.setProperty('--primary', config.couleur); 
     document.documentElement.style.setProperty('--primary-glow', config.couleur + '4D'); 
 
-    // 4. Injection des textes 
     document.title = config.nom + " | Fidélité FYDELIO"; 
     document.querySelectorAll('.nom-resto').forEach(el => el.innerText = config.nom); 
     document.querySelectorAll('.texte-recompense').forEach(el => el.innerHTML = config.recompense); 
