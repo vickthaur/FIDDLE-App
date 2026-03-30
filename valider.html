@@ -109,28 +109,30 @@
                 }
 
                 try {
+                    // DÉTERMINATION DES COLONNES SELON LE RESTO
                     const maColonne = (config.id === 'villa_saint_antoine') ? 'points_villa' : 'points_bistrot';
+                    const colonneSecu = (config.id === 'villa_saint_antoine') ? 'last_scan_villa' : 'last_scan_bistrot';
 
-                    // 1. RECHERCHE DU CLIENT ET DE LA DATE DU DERNIER SCAN
+                    // 1. RECHERCHE DU CLIENT
                     const { data: client, error: fetchError } = await _supabase
                         .from('clients')
-                        .select(`*, last_scan_at`)
+                        .select(`*, ${colonneSecu}`)
                         .eq('email', email)
                         .maybeSingle();
 
                     if (fetchError) throw fetchError;
 
-                    // 🛡️ SÉCURITÉ ANTI-FRAUDE : Le verrouillage des 8 heures
-                    if (client && client.last_scan_at) {
-                        const dernierScan = new Date(client.last_scan_at).getTime();
+                    // 🛡️ SÉCURITÉ ANTI-FRAUDE : Verrouillage 8h spécifique au restaurant actuel
+                    if (client && client[colonneSecu]) {
+                        const dernierScan = new Date(client[colonneSecu]).getTime();
                         const maintenant = Date.now();
                         const heuresEcoulees = (maintenant - dernierScan) / (1000 * 60 * 60);
 
                         if (heuresEcoulees < config.delaiAntiFraudeHeures) {
                             document.body.classList.add('warning');
                             uiIcon.innerText = "🛡️";
-                            uiTitle.innerText = "Anti-Fraude";
-                            uiText.innerText = "Scan déjà effectué. Revenez plus tard !";
+                            uiTitle.innerText = "Déjà scanné";
+                            uiText.innerText = "Revenez dans quelques heures pour ce restaurant !";
                             return retourScanner(4000);
                         }
                     }
@@ -138,35 +140,38 @@
                     let scoreActuel = 0;
 
                     if (!client) {
+                        // Création d'un nouveau client s'il n'existe pas du tout dans la base
                         await _supabase.from('clients').insert([{ email: email, prenom: 'Client', restaurant_origine: config.id }]);
                         scoreActuel = 0;
                     } else {
+                        // On prend les points du restaurant actuel (si vide, on met 0)
                         scoreActuel = client[maColonne] || 0;
                     }
 
                     let nouveauScore;
                     let estCadeau = false;
 
+                    // Calcul du score
                     if (scoreActuel >= config.seuilPoints) {
-                        nouveauScore = 1;
+                        nouveauScore = 1; // On recommence après le cadeau
                         estCadeau = true;
                     } else {
                         nouveauScore = scoreActuel + 1;
                         if (nouveauScore === config.seuilPoints) estCadeau = true; 
                     }
 
-                    // 2. MISE À JOUR : On sauvegarde les points ET l'heure actuelle
+                    // 2. MISE À JOUR : Points + Heure de scan pour CE resto précisément
                     const { error: updateError } = await _supabase
                         .from('clients')
                         .update({ 
                             [maColonne]: nouveauScore,
-                            last_scan_at: new Date().toISOString()
+                            [colonneSecu]: new Date().toISOString()
                         })
                         .eq('email', email);
 
                     if (updateError) throw updateError;
 
-                    // 3. Synchro Brevo
+                    // 3. Synchro Brevo (si configuré)
                     if (config.formScan && config.formScan !== "#") {
                         brevoForm.action = config.formScan;
                         brevoEmailInput.value = email;
