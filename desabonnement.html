@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Désabonnement | FYDELIO</title>
+
+    <script src="config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --primary: #0F766E; --bg: #f8fafc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; padding: 24px;
+            color: #1e293b;
+        }
+        .card {
+            background: white; border-radius: 28px; padding: 44px 36px;
+            max-width: 440px; width: 100%;
+            box-shadow: 0 20px 48px -12px rgba(0,0,0,0.08);
+            text-align: center; border: 1px solid rgba(0,0,0,0.05);
+        }
+        .icon { font-size: 56px; margin-bottom: 20px; }
+        h1 { font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.5px; }
+        .subtitle { font-size: 14px; color: #64748b; line-height: 1.7; margin-bottom: 32px; }
+        .subtitle strong { color: var(--primary); }
+
+        .email-display {
+            background: #F0FDF4; border: 1px solid rgba(15,118,110,0.2);
+            border-radius: 14px; padding: 14px 20px;
+            font-size: 15px; font-weight: 700; color: #0f172a;
+            margin-bottom: 28px; word-break: break-all;
+        }
+
+        /* Options */
+        .options-group { text-align: left; margin-bottom: 24px; }
+        .option-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; border-radius: 14px; cursor: pointer;
+            border: 2px solid transparent; margin-bottom: 10px;
+            background: #F8FAFC; transition: all 0.2s ease;
+        }
+        .option-row:hover { border-color: rgba(15,118,110,0.2); background: #F0FDF4; }
+        .option-row.selected { border-color: var(--primary); background: #F0FDF4; }
+        .option-row input[type="radio"] { display: none; }
+        .option-dot {
+            width: 20px; height: 20px; border-radius: 50%;
+            border: 2px solid #CBD5E1; flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        .option-row.selected .option-dot {
+            border-color: var(--primary);
+            background: var(--primary);
+            box-shadow: inset 0 0 0 4px white;
+        }
+        .option-text { font-size: 14px; font-weight: 600; color: #334155; }
+        .option-sub  { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+        /* Boutons */
+        .btn-unsubscribe {
+            width: 100%; background: #EF4444; color: white; border: none;
+            padding: 16px; border-radius: 14px; font-size: 15px; font-weight: 800;
+            cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;
+            font-family: inherit;
+        }
+        .btn-unsubscribe:hover:not(:disabled) { background: #DC2626; transform: translateY(-2px); }
+        .btn-unsubscribe:disabled { background: #cbd5e1; cursor: not-allowed; }
+
+        .btn-cancel {
+            width: 100%; background: transparent; color: #64748b; border: 2px solid #E2E8F0;
+            padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 700;
+            cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+        }
+        .btn-cancel:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* États */
+        #state-form, #state-success, #state-error, #state-loading { display: none; }
+        #state-form { display: block; }
+
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid rgba(15,118,110,0.15);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.7s linear infinite; margin: 20px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .legal-note {
+            margin-top: 24px; font-size: 10.5px; color: #b0bec5;
+            line-height: 1.6;
+        }
+        .legal-note a { color: #94a3b8; text-decoration: none; }
+        .legal-note a:hover { color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+
+        <!-- ÉTAT : Formulaire de désabonnement -->
+        <div id="state-form">
+            <div class="icon">📧</div>
+            <h1>Gérer mes préférences</h1>
+            <p class="subtitle">
+                Vous avez reçu un email de <strong class="nom-resto">FYDELIO</strong> 
+                et souhaitez modifier vos préférences de communication.
+            </p>
+
+            <div class="email-display" id="email-display">
+                Chargement...
+            </div>
+
+            <div class="options-group" id="options-group">
+                <label class="option-row selected" id="opt-marketing">
+                    <input type="radio" name="action" value="marketing" checked>
+                    <div class="option-dot"></div>
+                    <div>
+                        <div class="option-text">Se désabonner des emails marketing</div>
+                        <div class="option-sub">Offres, promotions, événements — votre carte reste active</div>
+                    </div>
+                </label>
+
+                <label class="option-row" id="opt-tout">
+                    <input type="radio" name="action" value="tout">
+                    <div class="option-dot"></div>
+                    <div>
+                        <div class="option-text">Se désabonner de tous les emails</div>
+                        <div class="option-sub">Y compris les notifications de points fidélité</div>
+                    </div>
+                </label>
+
+                <label class="option-row" id="opt-supprimer">
+                    <input type="radio" name="action" value="supprimer">
+                    <div class="option-dot"></div>
+                    <div>
+                        <div class="option-text">Supprimer mon compte et mes données</div>
+                        <div class="option-sub">Droit à l'effacement RGPD — irréversible</div>
+                    </div>
+                </label>
+            </div>
+
+            <button class="btn-unsubscribe" id="btn-confirmer" onclick="confirmerAction()">
+                Confirmer
+            </button>
+            <button class="btn-cancel" onclick="window.history.back()">
+                Annuler — garder mes préférences
+            </button>
+
+            <div class="legal-note">
+                Conformément au RGPD, vous pouvez exercer vos droits à tout moment.<br>
+                <a href="politique-confidentialite.html">Politique de confidentialité</a> · 
+                Contact : <a href="mailto:victordetroux2@gmail.com">victordetroux2@gmail.com</a>
+            </div>
+        </div>
+
+        <!-- ÉTAT : Chargement -->
+        <div id="state-loading">
+            <div class="spinner"></div>
+            <p style="color:#64748b;font-weight:600;font-size:14px;">Traitement en cours…</p>
+        </div>
+
+        <!-- ÉTAT : Succès -->
+        <div id="state-success">
+            <div class="icon">✅</div>
+            <h1>C'est pris en compte</h1>
+            <p class="subtitle">
+                Votre demande a été traitée immédiatement.<br>
+                Si vous souhaitez vous réinscrire, revenez simplement scanner un QR Code FYDELIO.
+            </p>
+            <div class="legal-note">
+                Délai de traitement Brevo : jusqu'à 24h.<br>
+                <a href="politique-confidentialite.html">Politique de confidentialité</a>
+            </div>
+        </div>
+
+        <!-- ÉTAT : Erreur -->
+        <div id="state-error">
+            <div class="icon">⚠️</div>
+            <h1>Lien expiré</h1>
+            <p class="subtitle">
+                Ce lien de désabonnement est invalide ou a déjà été utilisé.<br>
+                Contactez-nous directement si besoin.
+            </p>
+            <p style="margin-top:16px;font-size:13px;">
+                <a href="mailto:victordetroux2@gmail.com" style="color:var(--primary);font-weight:700;">
+                    victordetroux2@gmail.com
+                </a>
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+    // Sélection des options radio avec style visuel
+    document.querySelectorAll('.option-row').forEach(row => {
+        row.addEventListener('click', () => {
+            document.querySelectorAll('.option-row').forEach(r => r.classList.remove('selected'));
+            row.classList.add('selected');
+            row.querySelector('input[type="radio"]').checked = true;
+        });
+    });
+
+    // Récupération de l'email et du token depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email') || '';
+    const tokenParam = urlParams.get('token') || '';
+
+    const emailDisplay = document.getElementById('email-display');
+    if (emailParam) {
+        emailDisplay.textContent = emailParam;
+    } else {
+        emailDisplay.textContent = 'Email non spécifié';
+        document.getElementById('btn-confirmer').disabled = true;
+    }
+
+    function afficherEtat(id) {
+        ['state-form','state-loading','state-success','state-error'].forEach(s => {
+            document.getElementById(s).style.display = (s === id) ? 'block' : 'none';
+        });
+    }
+
+    async function confirmerAction() {
+        if (!emailParam) return;
+
+        const action = document.querySelector('input[name="action"]:checked').value;
+        afficherEtat('state-loading');
+
+        try {
+            // Init Supabase
+            let config = {};
+            if (typeof appliquerConfig === 'function') {
+                try { config = appliquerConfig(); } catch(e) {}
+            }
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+            if (action === 'supprimer') {
+                // Droit à l'effacement RGPD — on anonymise plutôt que supprimer
+                // (conservation légale des transactions)
+                await _supabase.from('clients').update({
+                    prenom:             '[SUPPRIMÉ]',
+                    nom:                '[SUPPRIMÉ]',
+                    telephone:          null,
+                    date_anniversaire:  null,
+                    optin_email:        false,
+                    optin_date:         new Date().toISOString(),
+                    optin_source:       'desabonnement_rgpd'
+                }).eq('email', emailParam);
+
+            } else {
+                // Désabonnement email (marketing ou tout)
+                await _supabase.from('clients').update({
+                    optin_email:  false,
+                    optin_date:   new Date().toISOString(),
+                    optin_source: 'desabonnement_' + action
+                }).eq('email', emailParam);
+            }
+
+            afficherEtat('state-success');
+
+        } catch (err) {
+            console.error('Erreur désabonnement:', err);
+            afficherEtat('state-error');
+        }
+    }
+    </script>
+
+</body>
+</html>
