@@ -10,10 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { 
-            --primary: #0F766E; 
-            --bg-dark: #0f172a;
-        }
+        :root { --primary: #0F766E; --bg-dark: #0f172a; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
@@ -34,180 +31,205 @@
             transform: scale(0.95); opacity: 0;
             animation: popIn 0.5s forwards cubic-bezier(0.16, 1, 0.3, 1);
         }
-
         @keyframes popIn { to { transform: scale(1); opacity: 1; } }
 
         .brand-tag {
             font-size: 10px; font-weight: 800;
             color: rgba(255,255,255,0.4);
-            letter-spacing: 2px; text-transform: uppercase;
-            margin-bottom: 20px;
+            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px;
         }
 
-        .icon { font-size: 55px; margin-bottom: 15px; display: block; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.2)); }
-        h1 { font-size: 32px; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; }
-        p { color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 600; line-height: 1.4; }
+        .icon  { font-size: 55px; margin-bottom: 15px; display: block; }
+        h1     { font-size: 32px; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; }
+        p      { color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 600; line-height: 1.4; }
         
         .score-display { 
             font-size: 80px; font-weight: 800; color: white; 
             margin: 20px 0 10px 0; display: none;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            line-height: 1;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3); line-height: 1;
+        }
+
+        .client-name {
+            font-size: 18px; font-weight: 700; color: white;
+            margin-bottom: 8px; display: none;
         }
 
         body.success { background-color: #0F766E; } 
-        body.error { background-color: #ef4444; }   
-        body.reward { background-color: #f59e0b; }  
+        body.error   { background-color: #ef4444; }   
+        body.reward  { background-color: #f59e0b; }  
         body.warning { background-color: #f97316; } 
-
-        #hidden_iframe_brevo { display: none; width: 0; height: 0; border: none; }
-        #brevo_form { display: none; }
     </style>
 </head>
 <body>
 
     <div class="validation-box" id="ui-box">
         <div class="brand-tag">Système FYDELIO</div>
-        <span class="icon" id="ui-icon">⏳</span>
+        <span class="icon"  id="ui-icon">⏳</span>
+        <div class="client-name" id="ui-client"></div>
         <h1 id="ui-title">Analyse...</h1>
-        <p id="ui-text">Mise à jour du profil client</p>
+        <p  id="ui-text">Mise à jour du profil client</p>
         <div class="score-display" id="ui-score">0</div>
     </div>
 
-    <iframe name="hidden_iframe_brevo" id="hidden_iframe_brevo"></iframe>
-    <form id="brevo_form" method="POST" target="hidden_iframe_brevo">
-        <input type="email" id="brevo_email" name="EMAIL">
-        <input type="hidden" name="email_address_check" value="">
-        <input type="hidden" name="locale" value="fr">
-    </form>
-
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const config = appliquerConfig(); 
-            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            const params = new URLSearchParams(window.location.search);
-            const email = params.get('email');
+    document.addEventListener('DOMContentLoaded', () => {
+        const config   = appliquerConfig();
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const params   = new URLSearchParams(window.location.search);
 
-            const uiIcon = document.getElementById('ui-icon');
-            const uiTitle = document.getElementById('ui-title');
-            const uiText = document.getElementById('ui-text');
-            const uiScore = document.getElementById('ui-score');
-            const brevoForm = document.getElementById('brevo_form');
-            const brevoEmailInput = document.getElementById('brevo_email');
+        // 🔐 Token UUID (nouvelle carte) OU email (ancienne carte)
+        const token = params.get('token');
+        const email = params.get('email'); // rétro-compatibilité
 
-            function retourScanner(delai) {
-                setTimeout(() => {
-                    window.location.href = `scanner.html?resto=${config.id}`;
-                }, delai);
+        // Colonnes selon le restaurant
+        const colPoints = config.id === 'villa_saint_antoine'
+            ? 'points_villa'
+            : 'points_bistrot';
+        const colSecu = config.id === 'villa_saint_antoine'
+            ? 'last_scan_villa'
+            : 'last_scan_bistrot';
+
+        async function traiterScan() {
+
+            if (!token && !email) {
+                document.body.classList.add('error');
+                uiIcon.innerText  = '❌';
+                uiTitle.innerText = 'Erreur';
+                uiText.innerText  = 'QR Code non reconnu.';
+                return retourScanner(3000);
             }
 
-            async function traiterScan() {
-                if (!email) {
-                    document.body.classList.add('error');
-                    uiIcon.innerText = "❌"; uiTitle.innerText = "Erreur"; uiText.innerText = "QR Code non reconnu.";
-                    return retourScanner(3000);
+            try {
+                // Recherche par token (nouvelle carte) ou email (ancienne)
+                let query = supabase.from('clients')
+                    .select(`prenom, email, ${colPoints}, ${colSecu}`);
+
+                if (token) {
+                    query = query.eq('unsubscribe_token', token);
+                } else {
+                    query = query.eq('email', email.toLowerCase().trim());
                 }
 
-                try {
-                    // DÉTERMINATION DES COLONNES SELON LE RESTO
-                    const maColonne = (config.id === 'villa_saint_antoine') ? 'points_villa' : 'points_bistrot';
-                    const colonneSecu = (config.id === 'villa_saint_antoine') ? 'last_scan_villa' : 'last_scan_bistrot';
+                const { data: client, error: fetchError } = await query.maybeSingle();
 
-                    // 1. RECHERCHE DU CLIENT
-                    const { data: client, error: fetchError } = await _supabase
-                        .from('clients')
-                        .select(`*, ${colonneSecu}`)
-                        .eq('email', email)
-                        .maybeSingle();
+                if (fetchError) throw fetchError;
 
-                    if (fetchError) throw fetchError;
-
-                    // 🛡️ SÉCURITÉ ANTI-FRAUDE : Verrouillage 8h spécifique au restaurant actuel
-                    if (client && client[colonneSecu]) {
-                        const dernierScan = new Date(client[colonneSecu]).getTime();
-                        const maintenant = Date.now();
-                        const heuresEcoulees = (maintenant - dernierScan) / (1000 * 60 * 60);
-
-                        if (heuresEcoulees < config.delaiAntiFraudeHeures) {
-                            document.body.classList.add('warning');
-                            uiIcon.innerText = "🛡️";
-                            uiTitle.innerText = "Déjà scanné";
-                            uiText.innerText = "Revenez dans quelques heures pour ce restaurant !";
-                            return retourScanner(4000);
-                        }
-                    }
-
-                    let scoreActuel = 0;
-
-                    if (!client) {
-                        // Création d'un nouveau client s'il n'existe pas du tout dans la base
-                        await _supabase.from('clients').insert([{ email: email, prenom: 'Client', restaurant_origine: config.id }]);
-                        scoreActuel = 0;
-                    } else {
-                        // On prend les points du restaurant actuel (si vide, on met 0)
-                        scoreActuel = client[maColonne] || 0;
-                    }
-
-                    let nouveauScore;
-                    let estCadeau = false;
-
-                    // Calcul du score
-                    if (scoreActuel >= config.seuilPoints) {
-                        nouveauScore = 1; // On recommence après le cadeau
-                        estCadeau = true;
-                    } else {
-                        nouveauScore = scoreActuel + 1;
-                        if (nouveauScore === config.seuilPoints) estCadeau = true; 
-                    }
-
-                    // 2. MISE À JOUR : Points + Heure de scan pour CE resto précisément
-                    const { error: updateError } = await _supabase
-                        .from('clients')
-                        .update({ 
-                            [maColonne]: nouveauScore,
-                            [colonneSecu]: new Date().toISOString()
-                        })
-                        .eq('email', email);
-
-                    if (updateError) throw updateError;
-
-                    // 3. Synchro Brevo (si configuré)
-                    if (config.formScan && config.formScan !== "#") {
-                        brevoForm.action = config.formScan;
-                        brevoEmailInput.value = email;
-                        brevoForm.submit(); 
-                    }
-
-                    // 4. UI FYDELIO
-                    if (estCadeau) {
-                        document.body.classList.add('reward');
-                        uiIcon.innerText = "🎁";
-                        uiTitle.innerText = "CADEAU !";
-                        uiText.innerText = "Récompense débloquée.";
-                    } else {
-                        document.body.classList.add('success');
-                        uiIcon.innerText = "✅";
-                        uiTitle.innerText = "VALIDÉ";
-                        uiText.innerText = "Point ajouté avec succès.";
-                    }
-
-                    uiScore.style.display = "block";
-                    uiScore.innerText = nouveauScore;
-                    
-                    retourScanner(3500);
-
-                } catch (err) {
-                    console.error("Erreur de traitement FYDELIO:", err);
+                // Token non trouvé
+                if (!client) {
                     document.body.classList.add('error');
-                    uiIcon.innerText = "⚠️"; 
-                    uiTitle.innerText = "Erreur Sync"; 
-                    uiText.innerText = "Impossible de joindre la base.";
-                    retourScanner(4000);
+                    uiIcon.innerText  = '❌';
+                    uiTitle.innerText = 'Inconnu';
+                    uiText.innerText  = 'Ce QR Code n\'est pas enregistré.';
+                    return retourScanner(3500);
                 }
+
+                // Afficher le prénom du client
+                if (client.prenom) {
+                    uiClient.innerText   = client.prenom;
+                    uiClient.style.display = 'block';
+                }
+
+                // 2. Anti-fraude — délai entre 2 scans
+                if (client[colSecu]) {
+                    const dernierScan    = new Date(client[colSecu]).getTime();
+                    const heuresEcoulees = (Date.now() - dernierScan) / (1000 * 60 * 60);
+
+                    if (heuresEcoulees < config.delaiAntiFraudeHeures) {
+                        document.body.classList.add('warning');
+                        uiIcon.innerText  = '🛡️';
+                        uiTitle.innerText = 'Déjà scanné';
+                        uiText.innerText  = `${client.prenom || 'Ce client'} a déjà été validé aujourd'hui.`;
+                        return retourScanner(4000);
+                    }
+                }
+
+                // 3. Calcul des points
+                const scoreActuel = client[colPoints] || 0;
+                let nouveauScore;
+                let estCadeau = false;
+
+                if (scoreActuel >= config.seuilPoints) {
+                    nouveauScore = 1;
+                    estCadeau    = true;
+                } else {
+                    nouveauScore = scoreActuel + 1;
+                    if (nouveauScore === config.seuilPoints) estCadeau = true;
+                }
+
+                // 4. Mise à jour en base par TOKEN
+                const updateData = {
+                    [colPoints]: nouveauScore,
+                    [colSecu]:   new Date().toISOString()
+                };
+
+                // Si cadeau → incrémenter recompenses_obtenues
+                if (estCadeau) {
+                    updateData.recompenses_obtenues = (_supabase.rpc
+                        ? undefined // géré via SQL ci-dessous
+                        : (client.recompenses_obtenues || 0) + 1);
+                }
+
+                const identifier = token
+                    ? { unsubscribe_token: token }
+                    : { email: email.toLowerCase().trim() };
+
+                const { error: updateError } = await _supabase
+                    .from('clients')
+                    .update({ [colPoints]: nouveauScore, [colSecu]: new Date().toISOString() })
+                    .eq(token ? 'unsubscribe_token' : 'email', token || email.toLowerCase().trim());
+
+                if (updateError) throw updateError;
+
+                // Incrémenter recompenses_obtenues si cadeau
+                if (estCadeau) {
+                    await _supabase.rpc('increment_recompenses', {
+                        client_email: client.email
+                    }).catch(() => {
+                        // Fallback si RPC pas disponible
+                        _supabase.from('clients')
+                            .update({ recompenses_obtenues: (client.recompenses_obtenues || 0) + 1 })
+                            .eq('email', client.email);
+                    });
+                }
+
+                // 5. Enregistrer dans historique_scans
+                await _supabase.from('historique_scans').insert({
+                    client_email:  client.email,
+                    restaurant_id: config.id,
+                    points_avant:  scoreActuel,
+                    points_apres:  nouveauScore,
+                    est_cadeau:    estCadeau
+                });
+
+                // 5. UI résultat
+                if (estCadeau) {
+                    document.body.classList.add('reward');
+                    uiIcon.innerText  = '🎁';
+                    uiTitle.innerText = 'CADEAU !';
+                    uiText.innerText  = `${client.prenom ? client.prenom + ' a débloqué sa récompense !' : 'Récompense débloquée !'}`;
+                } else {
+                    document.body.classList.add('success');
+                    uiIcon.innerText  = '✅';
+                    uiTitle.innerText = 'VALIDÉ';
+                    uiText.innerText  = `Point ajouté pour ${client.prenom || 'ce client'}.`;
+                }
+
+                uiScore.style.display = 'block';
+                uiScore.innerText     = nouveauScore;
+                retourScanner(3500);
+
+            } catch (err) {
+                console.error('FYDELIO valider error:', err);
+                document.body.classList.add('error');
+                uiIcon.innerText  = '⚠️';
+                uiTitle.innerText = 'Erreur';
+                uiText.innerText  = 'Impossible de joindre la base.';
+                retourScanner(4000);
             }
+        }
 
-            traiterScan();
-        });
+        traiterScan();
+    });
     </script>
 </body>
 </html>
