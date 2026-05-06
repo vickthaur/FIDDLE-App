@@ -443,13 +443,17 @@
                     );
                 }
 
-                // 4. Affichage succès + redirection avec token
+                // 4. Affichage succès + redirection URL propre
                 document.getElementById('form-state').style.display  = 'none';
                 document.getElementById('success-state').style.display = 'block';
 
                 if (clientData?.unsubscribe_token) {
+                    // Stockage local — invisible dans l'URL
+                    localStorage.setItem(`fydelio_token_${config.id}`, clientData.unsubscribe_token);
+                    
                     setTimeout(() => {
-                        window.location.href = `carte.html?token=${clientData.unsubscribe_token}&resto=${config.id}`;
+                        // URL propre — le token n'apparaît pas
+                        window.location.href = `carte.html?resto=${config.id}`;
                     }, 1200);
                 }
 
