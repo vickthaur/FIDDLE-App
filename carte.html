@@ -4,304 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ma Carte de Fidélité | FYDELIO</title>
-    
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
     <style>
-        :root {
-            --primary: #0F766E;
-            --bg-color: #0F172A;
-            --card-bg: #1E293B;
-            --primary-glow: rgba(15, 118, 110, 0.3);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-color); 
-            color: white; 
-            display: flex; justify-content: center; align-items: center; 
-            min-height: 100vh; padding: 20px; 
-            background-image: radial-gradient(circle at top center, var(--primary-glow) 0%, transparent 70%);
-        }
-
-        .card { 
-            background: var(--card-bg); 
-            width: 100%; max-width: 380px; 
-            border-radius: 32px; padding: 40px 30px; 
-            text-align: center; 
-            border: 1px solid rgba(255,255,255,0.08); 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.6); 
-            position: relative; overflow: hidden;
-        }
-
-        .brand-badge {
-            font-size: 10px; font-weight: 800; color: var(--primary);
-            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; opacity: 0.8;
-        }
-
-        .logo-resto { 
-            font-size: 14px; text-transform: uppercase; letter-spacing: 3px; 
-            color: #FFFFFF; margin-bottom: 25px; font-weight: 800;
-        }
-
-        .welcome { font-size: 18px; margin-bottom: 5px; color: #cbd5e1; }
-        .welcome strong { color: white; font-weight: 800; }
-
-        .points-display { margin: 30px 0; }
-        .points-number { 
-            font-size: 85px; font-weight: 800; color: var(--primary); 
-            line-height: 1; margin-bottom: 5px;
-            text-shadow: 0 0 30px var(--primary-glow);
-            transition: all 0.5s ease;
-        }
-        .points-label { font-size: 12px; color: #64748b; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
-        
-        .progress-container { 
-            background: rgba(255,255,255,0.05); height: 16px; 
-            border-radius: 20px; margin: 25px 0 15px 0; overflow: hidden; 
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        .progress-bar { 
-            background: linear-gradient(90deg, var(--primary), #2DD4BF); height: 100%; width: 0%; 
-            border-radius: 20px; transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1); 
-            box-shadow: 0 0 15px var(--primary-glow);
-        }
-        
-        #phrase-info { font-size: 14.5px; color: #94a3b8; font-weight: 500; margin-bottom: 30px; line-height: 1.4; }
-        #phrase-info strong { color: white; font-weight: 700; }
-
-        .qr-section {
-            background: rgba(0,0,0,0.3); padding: 25px; border-radius: 24px;
-            border: 1px solid rgba(255,255,255,0.05); margin-top: 10px;
-        }
-
-        #qrcode { 
-            background: white; padding: 12px; border-radius: 16px; 
-            display: inline-block; margin-bottom: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-        }
-        
-        .instructions { font-size: 12px; color: #64748b; line-height: 1.5; font-weight: 500; }
-
-        .wallet-actions { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .wallet-title { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 12px; font-weight: 700; }
-        .wallet-buttons { display: flex; gap: 10px; justify-content: center; }
-        .wallet-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: #000; color: white; text-decoration: none; font-size: 12px; font-weight: 600; padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); transition: 0.3s; cursor: pointer; }
-        .disabled-btn { opacity: 0.5; }
-
-        .btn-avis {
-            display: none; width: 100%; background: var(--primary); color: white; 
-            text-decoration: none; padding: 15px; border-radius: 14px; 
-            font-size: 14px; font-weight: 700; margin-top: 15px; transition: 0.3s;
-        }
-        .btn-avis:hover { transform: translateY(-2px); filter: brightness(1.2); }
-
-        /* Popup wallet */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .modal-overlay.active { display: flex; opacity: 1; }
-        .modal-box {
-            background: var(--card-bg); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 24px; padding: 30px; width: 90%; max-width: 340px;
-            text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);
-            transform: scale(0.9); transition: transform 0.3s ease;
-        }
-        .modal-overlay.active .modal-box { transform: scale(1); }
-        .modal-title { color: white; font-size: 20px; font-weight: 800; margin-bottom: 10px; }
-        .modal-text  { color: #94a3b8; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
-        .modal-btn-close {
-            background: var(--primary); color: white; border: none; padding: 14px 25px;
-            border-radius: 14px; font-weight: 700; cursor: pointer; width: 100%; font-size: 15px;
-        }
-
-        /* Erreur lien invalide */
-        .error-state {
-            display: none; padding: 20px;
-        }
-        .error-state .error-icon { font-size: 48px; margin-bottom: 16px; }
-        .error-state p { color: #94a3b8; font-size: 14px; line-height: 1.6; }
-        .error-state a { color: var(--primary); font-weight: 700; text-decoration: none; }
-
-        .loading-pulse { animation: pulse 1.5s infinite; opacity: 0.5; }
-        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
-
-        .app-footer { margin-top: 25px; font-size: 10px; color: #475569; font-weight: 600; }
+        :root{--primary:#0F766E;--bg-color:#0F172A;--card-bg:#1E293B;--primary-glow:rgba(15,118,110,0.3);}
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background-color:var(--bg-color);color:white;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px;background-image:radial-gradient(circle at top center,var(--primary-glow) 0%,transparent 70%);}
+        .card{background:var(--card-bg);width:100%;max-width:380px;border-radius:32px;padding:40px 30px;text-align:center;border:1px solid rgba(255,255,255,0.08);box-shadow:0 25px 50px rgba(0,0,0,0.6);}
+        .brand-badge{font-size:10px;font-weight:800;color:var(--primary);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;opacity:0.8;}
+        .logo-resto{font-size:14px;text-transform:uppercase;letter-spacing:3px;color:#fff;margin-bottom:25px;font-weight:800;}
+        .welcome{font-size:18px;margin-bottom:5px;color:#cbd5e1;}
+        .welcome strong{color:white;font-weight:800;}
+        .points-display{margin:30px 0;}
+        .points-number{font-size:85px;font-weight:800;color:var(--primary);line-height:1;margin-bottom:5px;text-shadow:0 0 30px var(--primary-glow);transition:all 0.5s ease;}
+        .points-label{font-size:12px;color:#64748b;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+        .progress-container{background:rgba(255,255,255,0.05);height:16px;border-radius:20px;margin:25px 0 15px 0;overflow:hidden;border:1px solid rgba(255,255,255,0.05);}
+        .progress-bar{background:linear-gradient(90deg,var(--primary),#2DD4BF);height:100%;width:0%;border-radius:20px;transition:width 1.5s cubic-bezier(0.16,1,0.3,1);box-shadow:0 0 15px var(--primary-glow);}
+        #phrase-info{font-size:14.5px;color:#94a3b8;font-weight:500;margin-bottom:30px;line-height:1.4;}
+        #phrase-info strong{color:white;font-weight:700;}
+        .qr-section{background:rgba(0,0,0,0.3);padding:25px;border-radius:24px;border:1px solid rgba(255,255,255,0.05);margin-top:10px;}
+        #qrcode{background:white;padding:12px;border-radius:16px;display:inline-block;margin-bottom:15px;box-shadow:0 0 20px rgba(0,0,0,0.3);}
+        .instructions{font-size:12px;color:#64748b;line-height:1.5;font-weight:500;}
+        .wallet-actions{margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);}
+        .wallet-title{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#94a3b8;margin-bottom:12px;font-weight:700;}
+        .wallet-buttons{display:flex;gap:10px;justify-content:center;}
+        .wallet-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;background:#000;color:white;font-size:12px;font-weight:600;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);cursor:pointer;}
+        .disabled-btn{opacity:0.5;}
+        .btn-avis{display:none;width:100%;background:var(--primary);color:white;text-decoration:none;padding:15px;border-radius:14px;font-size:14px;font-weight:700;margin-top:15px;transition:0.3s;}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(5px);display:none;justify-content:center;align-items:center;z-index:1000;opacity:0;transition:opacity 0.3s ease;}
+        .modal-overlay.active{display:flex;opacity:1;}
+        .modal-box{background:var(--card-bg);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:30px;width:90%;max-width:340px;text-align:center;transform:scale(0.9);transition:transform 0.3s ease;}
+        .modal-overlay.active .modal-box{transform:scale(1);}
+        .modal-title{color:white;font-size:20px;font-weight:800;margin-bottom:10px;}
+        .modal-text{color:#94a3b8;font-size:14px;line-height:1.5;margin-bottom:25px;}
+        .modal-btn-close{background:var(--primary);color:white;border:none;padding:14px 25px;border-radius:14px;font-weight:700;cursor:pointer;width:100%;font-size:15px;}
+        .error-state{display:none;padding:20px;}
+        .error-state .error-icon{font-size:48px;margin-bottom:16px;}
+        .error-state p{color:#94a3b8;font-size:14px;line-height:1.6;}
+        .loading-pulse{animation:pulse 1.5s infinite;opacity:0.5;}
+        @keyframes pulse{0%{opacity:0.3}50%{opacity:0.8}100%{opacity:0.3}}
+        .app-footer{margin-top:25px;font-size:10px;color:#475569;font-weight:600;}
     </style>
 </head>
 <body>
-
     <div class="card">
         <div class="brand-badge">Propulsé par FYDELIO</div>
         <div class="logo-resto nom-resto">Chargement...</div>
 
-        <!-- État normal -->
         <div id="main-content">
             <p class="welcome">Bonjour <strong id="user-prenom">...</strong></p>
-            
             <div class="points-display">
                 <div class="points-number loading-pulse" id="user-points">-</div>
                 <div class="points-label">Points Fidélité</div>
             </div>
-
             <div class="progress-container">
                 <div class="progress-bar" id="barre-progression"></div>
             </div>
-
             <p id="phrase-info">Synchronisation FYDELIO en cours...</p>
-
             <div class="qr-section">
                 <div id="qrcode"></div>
-                <p class="instructions">
-                    Présentez ce QR Code lors de votre passage<br>pour cumuler vos points.
-                </p>
-                
+                <p class="instructions">Présentez ce QR Code lors de votre passage<br>pour cumuler vos points.</p>
                 <div class="wallet-actions">
                     <p class="wallet-title">Bientôt dans votre Wallet</p>
                     <div class="wallet-buttons">
                         <button class="wallet-btn disabled-btn" onclick="openWalletModal()">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg" alt="Apple" style="width:16px;height:16px;">
-                            Apple
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/3/31/Apple_logo_white.svg" alt="Apple" style="width:16px;height:16px;"> Apple
                         </button>
                         <button class="wallet-btn disabled-btn" onclick="openWalletModal()">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" alt="Google" style="width:20px;height:20px;">
-                            Google
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Android_robot.svg" alt="Google" style="width:20px;height:20px;"> Google
                         </button>
                     </div>
                 </div>
-
                 <a href="#" id="btn-google" class="btn-avis" target="_blank">⭐ Laisser un avis</a>
             </div>
         </div>
 
-        <!-- État erreur -->
         <div class="error-state" id="error-state">
             <div class="error-icon">🔗</div>
-            <p>
-                Ce lien est invalide ou a expiré.<br><br>
-                Scannez à nouveau le QR Code de votre table pour accéder à votre carte.
-            </p>
+            <p>Lien invalide.<br><br>Scannez à nouveau le QR Code de votre table.</p>
         </div>
 
         <div class="app-footer">Technologie de fidélisation sécurisée v5.0</div>
     </div>
 
-    <!-- Popup Wallet -->
     <div class="modal-overlay" id="walletModal">
         <div class="modal-box">
             <h3 class="modal-title">FYDELIO</h3>
-            <p class="modal-text">
-                L'intégration Wallet native arrive très prochainement !<br><br>
-                En attendant, ajoutez cette page à l'écran d'accueil de votre téléphone.
-            </p>
+            <p class="modal-text">L'intégration Wallet arrive bientôt !<br><br>En attendant, ajoutez cette page à votre écran d'accueil.</p>
             <button class="modal-btn-close" onclick="closeWalletModal()">J'ai compris</button>
         </div>
     </div>
 
     <script>
-    // ────────────────────────────────────────────
-    // 1. Init
-    // ────────────────────────────────────────────
-    const config   = appliquerConfig();
+    const config    = appliquerConfig();
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    if (config.couleur) {
-        document.documentElement.style.setProperty('--primary', config.couleur);
-    }
-
-    // 🔐 Token : localStorage en priorité (URL propre), URL en fallback
+    // Email depuis l'URL — simple et direct
     const urlParams = new URLSearchParams(window.location.search);
-    const tokenUrl  = urlParams.get('token');
-    const token     = tokenUrl || localStorage.getItem(`fydelio_token_${config.id}`);
+    const email     = urlParams.get('email');
 
-    // ────────────────────────────────────────────
-    // 2. Popup Wallet
-    // ────────────────────────────────────────────
     function openWalletModal() {
-        const modal = document.getElementById('walletModal');
-        modal.style.display = 'flex';
-        setTimeout(() => modal.classList.add('active'), 10);
+        const m = document.getElementById('walletModal');
+        m.style.display='flex'; setTimeout(()=>m.classList.add('active'),10);
     }
     function closeWalletModal() {
-        const modal = document.getElementById('walletModal');
-        modal.classList.remove('active');
-        setTimeout(() => modal.style.display = 'none', 300);
+        const m = document.getElementById('walletModal');
+        m.classList.remove('active'); setTimeout(()=>m.style.display='none',300);
     }
 
-    // ────────────────────────────────────────────
-    // 3. Affichage
-    // ────────────────────────────────────────────
     function actualiserAffichage(points, prenom) {
-        document.getElementById('user-prenom').innerText  = prenom;
+        document.getElementById('user-prenom').innerText = prenom;
         const ptsEl = document.getElementById('user-points');
         ptsEl.innerText = points;
         ptsEl.classList.remove('loading-pulse');
 
         const pct = (points / config.seuilPoints) * 100;
-        document.getElementById('barre-progression').style.width = Math.min(pct, 100) + '%';
+        document.getElementById('barre-progression').style.width = Math.min(pct,100)+'%';
 
         const phraseInfo = document.getElementById('phrase-info');
-        const btnGoogle  = document.getElementById('btn-google');
-
         if (points < config.seuilPoints) {
-            phraseInfo.innerHTML = `Plus que <strong>${config.seuilPoints - points} point${config.seuilPoints - points > 1 ? 's' : ''}</strong> avant votre cadeau !<br>
+            phraseInfo.innerHTML = `Plus que <strong>${config.seuilPoints-points} point${config.seuilPoints-points>1?'s':''}</strong> avant votre cadeau !<br>
                 <span style="font-size:12px;color:var(--primary);">${config.recompense}</span>`;
         } else {
-            phraseInfo.innerHTML = `🎉 <strong>CADEAU DÉBLOQUÉ !</strong><br>
-                <span style="font-size:13px;">Montrez cet écran au serveur.</span>`;
+            phraseInfo.innerHTML = `🎉 <strong>CADEAU DÉBLOQUÉ !</strong><br><span style="font-size:13px;">Montrez cet écran au serveur.</span>`;
             phraseInfo.style.color = 'var(--primary)';
             if (config.lienAvisGoogle) {
-                btnGoogle.style.display = 'block';
-                btnGoogle.href = config.lienAvisGoogle;
+                const btn = document.getElementById('btn-google');
+                btn.style.display='block'; btn.href=config.lienAvisGoogle;
             }
         }
     }
 
-    // ────────────────────────────────────────────
-    // 4. Chargement des données via TOKEN
-    // ────────────────────────────────────────────
     async function chargerDonnees() {
-
-        // Token manquant → lien invalide
-        if (!token) {
-            document.getElementById('main-content').style.display = 'none';
-            document.getElementById('error-state').style.display  = 'block';
+        if (!email) {
+            document.getElementById('main-content').style.display='none';
+            document.getElementById('error-state').style.display='block';
             return;
         }
 
-        // Colonne points selon le restaurant
-        const colPoints = config.id === 'villa_saint_antoine'
-            ? 'points_villa'
-            : 'points_bistrot';
+        const colPoints = config.id==='villa_saint_antoine' ? 'points_villa' : 'points_bistrot';
 
         try {
-            // 🔐 Recherche par token UUID, jamais par email
             const { data: client, error } = await _supabase
                 .from('clients')
-                .select(`prenom, ${colPoints}, unsubscribe_token`)
-                .eq('unsubscribe_token', token)
+                .select(`prenom, ${colPoints}`)
+                .eq('email', email.toLowerCase().trim())
                 .maybeSingle();
 
             if (error) throw error;
 
             if (client) {
-                const points = client[colPoints] || 0;
-                const prenom = client.prenom     || 'Client';
-                actualiserAffichage(points, prenom);
+                actualiserAffichage(client[colPoints]||0, client.prenom||'Client');
             } else {
-                // Token non trouvé → lien invalide
-                document.getElementById('main-content').style.display = 'none';
-                document.getElementById('error-state').style.display  = 'block';
-                return;
+                actualiserAffichage(0, 'Client');
+                document.getElementById('phrase-info').innerHTML = 'Bienvenue ! Votre carte FYDELIO est activée.';
             }
 
         } catch (err) {
@@ -309,10 +167,10 @@
             actualiserAffichage(0, 'Client');
         }
 
-        // ── QR Code contient le TOKEN, jamais l'email ──
+        // QR code contient l'email — lu par scanner → valider par email
         document.getElementById('qrcode').innerHTML = '';
         new QRCode(document.getElementById('qrcode'), {
-            text:         token,    // 🔐 Token UUID, pas l'email
+            text:         email,
             width:        140,
             height:       140,
             colorDark:    '#0f172a',
@@ -323,9 +181,8 @@
 
     chargerDonnees();
 
-    // Actualisation quand l'app revient au premier plan
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') chargerDonnees();
+        if (document.visibilityState==='visible') chargerDonnees();
     });
     </script>
 </body>
