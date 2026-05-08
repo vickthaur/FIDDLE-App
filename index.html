@@ -4,515 +4,241 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FYDELIO | Inscription Programme Fidélité</title>
-    
     <script src="config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
     <style>
-        :root {
-            --primary: #0F766E;
-            --primary-glow: rgba(15, 118, 110, 0.12);
-            --success-color: #10b981;
-            --bg-color: #f8fafc;
-            --input-bg: #f1f5f9;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-color);
-            display: flex; justify-content: center; align-items: flex-start; 
-            min-height: 100vh; color: #1e293b; padding: 24px 16px 40px;
-            background-image: radial-gradient(circle at top right, var(--primary-glow) 0%, transparent 55%);
-        }
-        
-        .card { 
-            background: #fff; width: 100%; max-width: 460px; 
-            border-radius: 28px; padding: 40px 32px; 
-            box-shadow: 0 20px 48px -12px rgba(0,0,0,0.08); 
-            text-align: center; border: 1px solid rgba(0,0,0,0.05);
-        }
-
-        .brand-badge { font-size: 10px; font-weight: 800; color: var(--primary); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 18px; opacity: 0.7; }
-        .logo-placeholder { font-size: 48px; margin-bottom: 14px; display: block; }
-        .restaurant-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 3px; color: #94a3b8; font-weight: 800; margin-bottom: 8px; }
-        h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; color: #0f172a; letter-spacing: -0.5px; }
-        .subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; line-height: 1.6; }
-        .subtitle strong { color: var(--primary); font-weight: 800; }
-
-        /* ---- Grille formulaire ---- */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-        .full-width { grid-column: span 2; }
-        .form-group { text-align: left; }
-        .form-group label { 
-            display: block; font-size: 10px; font-weight: 800; color: #94a3b8; 
-            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; 
-        }
-        .required-star { color: var(--primary); }
-        
-        .form-group input { 
-            width: 100%; padding: 14px 16px; border: 2px solid transparent; 
-            border-radius: 14px; font-size: 15px; font-weight: 500;
-            background-color: var(--input-bg); color: #0f172a;
-            transition: all 0.25s ease; font-family: inherit;
-        }
-        .form-group input:focus { 
-            outline: none; background-color: #fff; 
-            border-color: var(--primary); 
-            box-shadow: 0 0 0 4px var(--primary-glow); 
-        }
-        .form-group input::placeholder { color: #b0bec5; }
-
-        /* ---- Champ SMS avec +33 ---- */
-        .sms-wrapper {
-            display: flex;
-            gap: 0;
-            border: 2px solid transparent;
-            border-radius: 14px;
-            background-color: var(--input-bg);
-            overflow: hidden;
-            transition: all 0.25s ease;
-        }
-        .sms-wrapper:focus-within {
-            background-color: #fff;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px var(--primary-glow);
-        }
-        .sms-prefix {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 14px 12px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #475569;
-            background: transparent;
-            border-right: 1px solid rgba(0,0,0,0.08);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .sms-prefix .flag { font-size: 18px; }
-        .sms-input {
-            flex: 1;
-            padding: 14px 16px 14px 12px;
-            border: none !important;
-            border-radius: 0 !important;
-            background: transparent !important;
-            font-size: 15px;
-            font-weight: 500;
-            color: #0f172a;
-            outline: none;
-            box-shadow: none !important;
-            font-family: inherit;
-        }
-        .sms-input::placeholder { color: #b0bec5; }
-
-        /* ---- Consentement RGPD ---- */
-        .consent-block {
-            background: #F0FDF4;
-            border: 1px solid rgba(15,118,110,0.2);
-            border-radius: 16px;
-            padding: 16px 18px;
-            margin-bottom: 18px;
-            text-align: left;
-        }
-        .consent-title {
-            font-size: 10px; font-weight: 800; color: var(--primary);
-            text-transform: uppercase; letter-spacing: 1px;
-            margin-bottom: 14px;
-        }
-        .consent-row {
-            display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
-        }
-        .consent-row:last-child { margin-bottom: 0; }
-
-        .custom-checkbox { position: relative; flex-shrink: 0; margin-top: 1px; }
-        .custom-checkbox input[type="checkbox"] {
-            position: absolute; opacity: 0; width: 22px; height: 22px; cursor: pointer; z-index: 1; margin: 0;
-        }
-        .custom-checkbox .box {
-            width: 22px; height: 22px; border: 2px solid #CBD5E1; border-radius: 7px;
-            background: white; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s ease;
-        }
-        .custom-checkbox input:checked + .box { background: var(--primary); border-color: var(--primary); }
-        .custom-checkbox input:checked + .box::after { content: '✓'; color: white; font-weight: 800; font-size: 13px; }
-
-        .consent-text { font-size: 12.5px; color: #475569; line-height: 1.55; font-weight: 500; }
-        .consent-text a { color: var(--primary); font-weight: 700; text-decoration: none; }
-        .consent-text a:hover { text-decoration: underline; }
-        .badge-obligatoire {
-            display: inline-block; background: rgba(15,118,110,0.1);
-            color: var(--primary); font-size: 9px; font-weight: 800;
-            padding: 2px 7px; border-radius: 100px; text-transform: uppercase;
-            letter-spacing: 0.5px; margin-left: 4px;
-        }
-        .badge-optionnel {
-            display: inline-block; background: #F1F5F9;
-            color: #94a3b8; font-size: 9px; font-weight: 800;
-            padding: 2px 7px; border-radius: 100px; text-transform: uppercase;
-            letter-spacing: 0.5px; margin-left: 4px;
-        }
-
-        /* ---- Bouton ---- */
-        .btn-submit { 
-            width: 100%; background: var(--primary); color: white; border: none; 
-            padding: 18px; border-radius: 16px; font-size: 15px; font-weight: 800; 
-            cursor: pointer; transition: all 0.3s ease; 
-            box-shadow: 0 8px 20px -5px rgba(15,118,110,0.3);
-            font-family: inherit;
-        }
-        .btn-submit:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 14px 28px -5px rgba(15,118,110,0.35); }
-        .btn-submit:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        /* ---- Succès ---- */
-        #success-state { display: none; padding: 16px 0; animation: slideUp 0.5s forwards; }
-        @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        .success-icon { font-size: 64px; margin-bottom: 16px; }
-
-        /* ---- Footer légal ---- */
-        .legal-footer {
-            margin-top: 20px; font-size: 10.5px; color: #b0bec5; line-height: 1.7; font-weight: 500;
-        }
-        .legal-footer a { color: #94a3b8; text-decoration: none; }
-        .legal-footer a:hover { color: var(--primary); }
-
-        @media (max-width: 400px) {
-            .card { padding: 28px 18px; border-radius: 22px; }
-            .form-grid { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            h1 { font-size: 22px; }
-        }
+        :root { --primary:#0F766E; --primary-glow:rgba(15,118,110,0.12); --success-color:#10b981; --bg-color:#f8fafc; --input-bg:#f1f5f9; }
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background-color:var(--bg-color);display:flex;justify-content:center;align-items:flex-start;min-height:100vh;color:#1e293b;padding:24px 16px 40px;background-image:radial-gradient(circle at top right,var(--primary-glow) 0%,transparent 55%);}
+        .card{background:#fff;width:100%;max-width:460px;border-radius:28px;padding:40px 32px;box-shadow:0 20px 48px -12px rgba(0,0,0,0.08);text-align:center;border:1px solid rgba(0,0,0,0.05);}
+        .brand-badge{font-size:10px;font-weight:800;color:var(--primary);letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;opacity:0.7;}
+        .logo-placeholder{font-size:48px;margin-bottom:14px;display:block;}
+        .restaurant-tag{font-size:11px;text-transform:uppercase;letter-spacing:3px;color:#94a3b8;font-weight:800;margin-bottom:8px;}
+        h1{font-size:28px;font-weight:800;margin-bottom:8px;color:#0f172a;letter-spacing:-0.5px;}
+        .subtitle{font-size:14px;color:#64748b;margin-bottom:28px;line-height:1.6;}
+        .subtitle strong{color:var(--primary);font-weight:800;}
+        .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+        .full-width{grid-column:span 2;}
+        .form-group{text-align:left;}
+        .form-group label{display:block;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+        .required-star{color:var(--primary);}
+        .form-group input{width:100%;padding:14px 16px;border:2px solid transparent;border-radius:14px;font-size:15px;font-weight:500;background-color:var(--input-bg);color:#0f172a;transition:all 0.25s ease;font-family:inherit;}
+        .form-group input:focus{outline:none;background-color:#fff;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-glow);}
+        .form-group input::placeholder{color:#b0bec5;}
+        .sms-wrapper{display:flex;border:2px solid transparent;border-radius:14px;background-color:var(--input-bg);overflow:hidden;transition:all 0.25s ease;}
+        .sms-wrapper:focus-within{background-color:#fff;border-color:var(--primary);box-shadow:0 0 0 4px var(--primary-glow);}
+        .sms-prefix{display:flex;align-items:center;gap:6px;padding:14px 12px;font-size:14px;font-weight:700;color:#475569;border-right:1px solid rgba(0,0,0,0.08);white-space:nowrap;flex-shrink:0;}
+        .sms-input{flex:1;padding:14px 16px 14px 12px;border:none!important;border-radius:0!important;background:transparent!important;font-size:15px;font-weight:500;color:#0f172a;outline:none;font-family:inherit;}
+        .sms-input::placeholder{color:#b0bec5;}
+        .consent-block{background:#F0FDF4;border:1px solid rgba(15,118,110,0.2);border-radius:16px;padding:16px 18px;margin-bottom:18px;text-align:left;}
+        .consent-title{font-size:10px;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;}
+        .consent-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+        .consent-row:last-child{margin-bottom:0;}
+        .custom-checkbox{position:relative;flex-shrink:0;margin-top:1px;}
+        .custom-checkbox input[type="checkbox"]{position:absolute;opacity:0;width:22px;height:22px;cursor:pointer;z-index:1;margin:0;}
+        .custom-checkbox .box{width:22px;height:22px;border:2px solid #CBD5E1;border-radius:7px;background:white;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;}
+        .custom-checkbox input:checked+.box{background:var(--primary);border-color:var(--primary);}
+        .custom-checkbox input:checked+.box::after{content:'✓';color:white;font-weight:800;font-size:13px;}
+        .consent-text{font-size:12.5px;color:#475569;line-height:1.55;font-weight:500;}
+        .consent-text a{color:var(--primary);font-weight:700;text-decoration:none;}
+        .badge-obligatoire{display:inline-block;background:rgba(15,118,110,0.1);color:var(--primary);font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;text-transform:uppercase;letter-spacing:0.5px;margin-left:4px;}
+        .badge-optionnel{display:inline-block;background:#F1F5F9;color:#94a3b8;font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;text-transform:uppercase;letter-spacing:0.5px;margin-left:4px;}
+        .btn-submit{width:100%;background:var(--primary);color:white;border:none;padding:18px;border-radius:16px;font-size:15px;font-weight:800;cursor:pointer;transition:all 0.3s ease;box-shadow:0 8px 20px -5px rgba(15,118,110,0.3);font-family:inherit;}
+        .btn-submit:hover:not(:disabled){transform:translateY(-3px);}
+        .btn-submit:disabled{background:#cbd5e1;cursor:not-allowed;transform:none;box-shadow:none;}
+        #success-state{display:none;padding:16px 0;}
+        .success-icon{font-size:64px;margin-bottom:16px;}
+        .legal-footer{margin-top:20px;font-size:10.5px;color:#b0bec5;line-height:1.7;font-weight:500;}
+        .legal-footer a{color:#94a3b8;text-decoration:none;}
+        @media(max-width:400px){.card{padding:28px 18px;}.form-grid{grid-template-columns:1fr;}.full-width{grid-column:span 1;}}
     </style>
 </head>
 <body>
+<div class="card">
+    <div id="form-state">
+        <div class="brand-badge">Programme FYDELIO</div>
+        <div id="visual-icon" class="logo-placeholder">🎁</div>
+        <div class="restaurant-tag nom-resto">Chargement...</div>
+        <h1>Rejoignez le programme</h1>
+        <p class="subtitle">Inscrivez-vous gratuitement et débloquez votre premier point.<br><strong class="texte-recompense">Chargement...</strong></p>
 
-    <div class="card">
-
-        <div id="form-state">
-            <div class="brand-badge">Programme FYDELIO</div>
-            <div id="visual-icon" class="logo-placeholder">🎁</div>
-            <div class="restaurant-tag nom-resto">Chargement...</div>
-            <h1>Rejoignez le programme</h1>
-            <p class="subtitle">
-                Inscrivez-vous gratuitement et débloquez votre premier point immédiatement.<br>
-                <strong class="texte-recompense">Chargement...</strong>
-            </p>
-
-            <form id="form-inscription">
-                <div class="form-grid">
-
-                    <!-- PRENOM (attribut Brevo : PRENOM) -->
-                    <div class="form-group">
-                        <label>Prénom <span class="required-star">*</span></label>
-                        <input 
-                            type="text" 
-                            id="champ-prenom" 
-                            placeholder="Jean" 
-                            required 
-                            autocomplete="given-name"
-                            maxlength="50">
-                    </div>
-
-                    <!-- NOM (attribut Brevo : NOM) -->
-                    <div class="form-group">
-                        <label>Nom</label>
-                        <input 
-                            type="text" 
-                            id="champ-nom" 
-                            placeholder="Dupont" 
-                            autocomplete="family-name"
-                            maxlength="50">
-                    </div>
-
-                    <!-- EMAIL (attribut Brevo : EMAIL) -->
-                    <div class="form-group full-width">
-                        <label>Email <span class="required-star">*</span></label>
-                        <input 
-                            type="email" 
-                            id="champ-email" 
-                            placeholder="jean@example.com" 
-                            required 
-                            autocomplete="email">
-                    </div>
-
-                    <!-- SMS (attribut Brevo : SMS) — avec +33 automatique -->
-                    <div class="form-group full-width">
-                        <label>Mobile <span class="required-star">*</span></label>
-                        <div class="sms-wrapper">
-                            <div class="sms-prefix">
-                                <span class="flag">🇫🇷</span>
-                                <span>+33</span>
-                            </div>
-                            <input 
-                                type="tel" 
-                                id="champ-sms" 
-                                class="sms-input"
-                                placeholder="06 00 00 00 00" 
-                                required
-                                autocomplete="tel-national"
-                                maxlength="15"
-                                inputmode="numeric">
-                        </div>
-                    </div>
-
-                    <!-- DATE_ANNIVERSAIRE (attribut Brevo : DATE_ANNIVERSAIRE) -->
-                    <div class="form-group full-width">
-                        <label>Date d'anniversaire</label>
-                        <input 
-                            type="text" 
-                            id="champ-anniversaire" 
-                            placeholder="JJ/MM/AAAA"
-                            maxlength="10"
-                            inputmode="numeric">
-                    </div>
-
+        <form id="form-inscription">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Prénom <span class="required-star">*</span></label>
+                    <input type="text" id="champ-prenom" placeholder="Jean" required autocomplete="given-name" maxlength="50">
                 </div>
-
-                <!-- CONSENTEMENT RGPD -->
-                <div class="consent-block">
-                    <div class="consent-title">🔐 Vos droits sur vos données</div>
-
-                    <!-- Obligatoire : programme fidélité -->
-                    <div class="consent-row">
-                        <div class="custom-checkbox">
-                            <input type="checkbox" id="consent-fidelite" required>
-                            <div class="box"></div>
-                        </div>
-                        <p class="consent-text">
-                            J'accepte que mes données soient utilisées pour mon programme de fidélité.
-                            <span class="badge-obligatoire">Obligatoire</span><br>
-                            <a href="politique-confidentialite.html" target="_blank">Politique de confidentialité →</a>
-                        </p>
-                    </div>
-
-                    <!-- Optionnel : emails marketing (OPT_IN Brevo) -->
-                    <div class="consent-row">
-                        <div class="custom-checkbox">
-                            <input type="checkbox" id="consent-marketing" checked>
-                            <div class="box"></div>
-                        </div>
-                        <p class="consent-text">
-                            J'accepte de recevoir des offres et actualités par email.
-                            <span class="badge-optionnel">Optionnel</span><br>
-                            Désinscription en 1 clic à tout moment.
-                        </p>
+                <div class="form-group">
+                    <label>Nom</label>
+                    <input type="text" id="champ-nom" placeholder="Dupont" autocomplete="family-name" maxlength="50">
+                </div>
+                <div class="form-group full-width">
+                    <label>Email <span class="required-star">*</span></label>
+                    <input type="email" id="champ-email" placeholder="jean@example.com" required autocomplete="email">
+                </div>
+                <div class="form-group full-width">
+                    <label>Mobile <span class="required-star">*</span></label>
+                    <div class="sms-wrapper">
+                        <div class="sms-prefix"><span>🇫🇷</span><span>+33</span></div>
+                        <input type="tel" id="champ-sms" class="sms-input" placeholder="6 00 00 00 00" required autocomplete="tel-national" maxlength="15" inputmode="numeric">
                     </div>
                 </div>
+                <div class="form-group full-width">
+                    <label>Date d'anniversaire</label>
+                    <input type="text" id="champ-anniversaire" placeholder="JJ/MM/AAAA" maxlength="10" inputmode="numeric">
+                </div>
+            </div>
 
-                <button type="submit" class="btn-submit" id="btn-submit">
-                    Activer ma carte fidélité 🚀
-                </button>
-            </form>
-        </div>
+            <div class="consent-block">
+                <div class="consent-title">🔐 Vos droits sur vos données</div>
+                <div class="consent-row">
+                    <div class="custom-checkbox">
+                        <input type="checkbox" id="consent-fidelite" required>
+                        <div class="box"></div>
+                    </div>
+                    <p class="consent-text">
+                        J'accepte que mes données soient utilisées pour mon programme de fidélité.
+                        <span class="badge-obligatoire">Obligatoire</span><br>
+                        <a href="politique-confidentialite.html" target="_blank">Politique de confidentialité →</a>
+                    </p>
+                </div>
+                <div class="consent-row">
+                    <div class="custom-checkbox">
+                        <input type="checkbox" id="consent-marketing" checked>
+                        <div class="box"></div>
+                    </div>
+                    <p class="consent-text">
+                        J'accepte de recevoir des offres et actualités par email.
+                        <span class="badge-optionnel">Optionnel</span>
+                    </p>
+                </div>
+            </div>
 
-        <!-- SUCCÈS -->
-        <div id="success-state">
-            <div class="success-icon">✨</div>
-            <h2 style="font-size:24px;font-weight:800;color:var(--success-color);margin-bottom:10px;">C'est validé !</h2>
-            <p class="subtitle">
-                Votre carte <strong>FYDELIO</strong> est activée.<br>
-                Redirection vers votre carte en cours...
-            </p>
-        </div>
-
-        <div class="legal-footer">
-            Données sécurisées · Union Européenne · RGPD Art. 13<br>
-            <a href="politique-confidentialite.html" target="_blank">Politique de confidentialité</a>
-            &nbsp;·&nbsp;
-            <a href="desabonnement.html" target="_blank">Se désabonner</a>
-        </div>
+            <button type="submit" class="btn-submit" id="btn-submit">Activer ma carte fidélité 🚀</button>
+        </form>
     </div>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const config = appliquerConfig();
-        const form   = document.getElementById('form-inscription');
-        const btn    = document.getElementById('btn-submit');
-        const icon   = document.getElementById('visual-icon');
+    <div id="success-state">
+        <div class="success-icon">✨</div>
+        <h2 style="font-size:24px;font-weight:800;color:var(--success-color);margin-bottom:10px;">C'est validé !</h2>
+        <p class="subtitle">Votre carte <strong>FYDELIO</strong> est activée.<br>Redirection en cours...</p>
+    </div>
 
-        if (config.id === 'villa_saint_antoine') icon.innerHTML = '🏛️';
-        if (config.id === 'bistrot')              icon.innerHTML = '🍷';
+    <div class="legal-footer">
+        Données sécurisées · Union Européenne · RGPD<br>
+        <a href="politique-confidentialite.html" target="_blank">Politique de confidentialité</a> &nbsp;·&nbsp;
+        <a href="desabonnement.html" target="_blank">Se désabonner</a>
+    </div>
+</div>
 
-        // ── Formatage automatique du numéro de téléphone ──
-        const smsInput = document.getElementById('champ-sms');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const config = appliquerConfig();
+    const form   = document.getElementById('form-inscription');
+    const btn    = document.getElementById('btn-submit');
+    const icon   = document.getElementById('visual-icon');
 
-        smsInput.addEventListener('input', () => {
-            // Garde uniquement les chiffres
-            let val = smsInput.value.replace(/\D/g, '');
+    if (config.id === 'villa_saint_antoine') icon.innerHTML = '🏛️';
+    if (config.id === 'bistrot')              icon.innerHTML = '🍷';
 
-            // Supprime le 0 initial si l'utilisateur tape 06... ou 07...
-            if (val.startsWith('0')) val = val.substring(1);
+    // Formatage SMS
+    const smsInput = document.getElementById('champ-sms');
+    smsInput.addEventListener('input', () => {
+        let val = smsInput.value.replace(/\D/g, '');
+        if (val.startsWith('0'))  val = val.substring(1);
+        if (val.startsWith('33')) val = val.substring(2);
+        smsInput.value = val.substring(0, 9);
+    });
+    smsInput.addEventListener('blur', () => {
+        const val = smsInput.value.replace(/\D/g, '');
+        if (val.length === 9) smsInput.value = val.replace(/(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
+    });
 
-            // Supprime le 33 si l'utilisateur a tapé +33 ou 0033
-            if (val.startsWith('33')) val = val.substring(2);
+    // Formatage anniversaire
+    const annivInput = document.getElementById('champ-anniversaire');
+    annivInput.addEventListener('input', () => {
+        let val = annivInput.value.replace(/\D/g, '');
+        if (val.length >= 3 && val.length <= 4) val = val.substring(0,2)+'/'+val.substring(2);
+        else if (val.length > 4) val = val.substring(0,2)+'/'+val.substring(2,4)+'/'+val.substring(4,8);
+        annivInput.value = val;
+    });
 
-            // Limite à 9 chiffres (après le +33)
-            val = val.substring(0, 9);
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-            smsInput.value = val;
-        });
+        const consentFidelite  = document.getElementById('consent-fidelite').checked;
+        const consentMarketing = document.getElementById('consent-marketing').checked;
 
-        // Formatage à la perte de focus — format lisible
-        smsInput.addEventListener('blur', () => {
-            let val = smsInput.value.replace(/\D/g, '');
-            if (val.length === 9) {
-                // Format : 6 12 34 56 78
-                smsInput.value = val.replace(/(\d{1})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1 $2 $3 $4 $5');
-            }
-        });
+        if (!consentFidelite) { alert('Vous devez accepter la politique de fidélité.'); return; }
 
-        // Formatage anniversaire JJ/MM/AAAA
-        const annivInput = document.getElementById('champ-anniversaire');
-        annivInput.addEventListener('input', () => {
-            let val = annivInput.value.replace(/\D/g, '');
-            if (val.length >= 3 && val.length <= 4) {
-                val = val.substring(0, 2) + '/' + val.substring(2);
-            } else if (val.length > 4) {
-                val = val.substring(0, 2) + '/' + val.substring(2, 4) + '/' + val.substring(4, 8);
-            }
-            annivInput.value = val;
-        });
+        btn.textContent = 'Inscription en cours…';
+        btn.disabled    = true;
 
-        // ── Soumission ──
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        const emailVal  = document.getElementById('champ-email').value.trim().toLowerCase();
+        const prenomVal = document.getElementById('champ-prenom').value.trim();
+        const nomVal    = document.getElementById('champ-nom').value.trim();
+        const smsRaw    = smsInput.value.replace(/\D/g,'').substring(0,9);
+        const smsVal    = smsRaw ? `+33${smsRaw}` : null;
+        const annivVal  = document.getElementById('champ-anniversaire').value.trim() || null;
+        const colPoints = config.id === 'villa_saint_antoine' ? 'points_villa' : 'points_bistrot';
 
-            const consentFidelite  = document.getElementById('consent-fidelite').checked;
-            const consentMarketing = document.getElementById('consent-marketing').checked;
+        try {
+            const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            if (!consentFidelite) {
-                alert('Vous devez accepter la politique de fidélité pour vous inscrire.');
-                return;
-            }
+            await _supabase.from('clients').upsert({
+                email:              emailVal,
+                prenom:             prenomVal,
+                nom:                nomVal,
+                telephone:          smsVal,
+                date_anniversaire:  annivVal,
+                restaurant_origine: config.id,
+                [colPoints]:        config.pointsBienvenue,
+                optin_email:        consentMarketing,
+                optin_date:         new Date().toISOString(),
+                optin_source:       'formulaire_web'
+            }, { onConflict: 'email' });
 
-            btn.textContent = 'Inscription en cours…';
-            btn.disabled    = true;
-
-            // Récupération des valeurs
-            const prenomVal = document.getElementById('champ-prenom').value.trim();
-            const nomVal    = document.getElementById('champ-nom').value.trim();
-            const emailVal  = document.getElementById('champ-email').value.trim().toLowerCase();
-
-            // Construction du numéro complet avec +33
-            const smsRaw    = smsInput.value.replace(/\D/g, '').substring(0, 9);
-            const smsVal    = smsRaw ? `+33${smsRaw}` : null;
-
-            const annivVal  = document.getElementById('champ-anniversaire').value.trim() || null;
-            const colPoints = config.id === 'villa_saint_antoine' ? 'points_villa' : 'points_bistrot';
-
-            try {
-                const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-                // 1. Upsert Supabase
-                const { error: upsertError } = await _supabase.from('clients').upsert({
-                    email:              emailVal,
-                    prenom:             prenomVal,
-                    nom:                nomVal,
-                    telephone:          smsVal,
-                    date_anniversaire:  annivVal,
-                    restaurant_origine: config.id,
-                    [colPoints]:        config.pointsBienvenue,
-                    optin_email:        consentMarketing,
-                    optin_date:         new Date().toISOString(),
-                    optin_source:       'formulaire_web'
-                }, { onConflict: 'email' });
-
-                if (upsertError) throw upsertError;
-
-                // 2. Récupération du token UUID
-                const { data: clientData } = await _supabase
-                    .from('clients')
-                    .select('unsubscribe_token')
-                    .eq('email', emailVal)
-                    .single();
-
-                // 3. Envoi vers Brevo — noms de champs calés exactement sur les attributs Brevo
-                if (config.formInscription && config.formInscription !== '#') {
-                    soumettreBrevoCaché(
-                        config.formInscription,
-                        emailVal,
-                        prenomVal,
-                        nomVal,
-                        smsVal,
-                        annivVal,
-                        consentMarketing   // OPT_IN Brevo (Booléen)
-                    );
-                }
-
-                // 4. Affichage succès + redirection URL propre
-                document.getElementById('form-state').style.display  = 'none';
-                document.getElementById('success-state').style.display = 'block';
-
-                if (clientData?.unsubscribe_token) {
-                    // Stockage local — invisible dans l'URL
-                    localStorage.setItem(`fydelio_token_${config.id}`, clientData.unsubscribe_token);
-                    
-                    setTimeout(() => {
-                        // URL propre — le token n'apparaît pas
-                        window.location.href = `carte.html?resto=${config.id}`;
-                    }, 1200);
-                }
-
-            } catch (err) {
-                console.error('FYDELIO inscription error:', err);
-                // Fallback : tenter Brevo quand même
-                if (config.formInscription !== '#') {
-                    soumettreBrevoCaché(config.formInscription, emailVal, prenomVal, nomVal, smsVal, annivVal, consentMarketing);
-                }
-                document.getElementById('form-state').style.display  = 'none';
-                document.getElementById('success-state').style.display = 'block';
-            }
-        });
-
-        // ── Envoi Brevo via iframe caché ──
-        // Noms calés EXACTEMENT sur les attributs Brevo vus dans les captures
-        function soumettreBrevoCaché(actionUrl, email, prenom, nom, sms, anniversaire, optIn) {
-            const tmpForm = document.createElement('form');
-            tmpForm.method  = 'POST';
-            tmpForm.action  = actionUrl;
-            tmpForm.target  = 'brevo_iframe';
-            tmpForm.style.display = 'none';
-
-            // Correspondance exacte attributs Brevo
-            const champs = {
-                'EMAIL':             email,
-                'PRENOM':            prenom,
-                'NOM':               nom,
-                'SMS':               sms || '',
-                'DATE_ANNIVERSAIRE': anniversaire || '',
-                'OPT_IN':            optIn ? 'true' : 'false',
-                // Champs techniques Brevo
-                'email_address_check': '',
-                'locale':              'fr'
-            };
-
-            Object.entries(champs).forEach(([name, value]) => {
-                const input = document.createElement('input');
-                input.type  = 'hidden';
-                input.name  = name;
-                input.value = value || '';
-                tmpForm.appendChild(input);
-            });
-
-            document.body.appendChild(tmpForm);
-
-            // Créer l'iframe si elle n'existe pas
-            if (!document.getElementById('brevo_iframe')) {
-                const iframe = document.createElement('iframe');
-                iframe.name  = 'brevo_iframe';
-                iframe.id    = 'brevo_iframe';
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
+            // Envoi Brevo si opt-in
+            if (consentMarketing && config.formInscription && config.formInscription !== '#') {
+                soumettreBrevo(config.formInscription, emailVal, prenomVal, nomVal, smsVal, annivVal, consentMarketing);
             }
 
-            tmpForm.submit();
-            setTimeout(() => document.body.removeChild(tmpForm), 2000);
+            document.getElementById('form-state').style.display  = 'none';
+            document.getElementById('success-state').style.display = 'block';
+
+            // Redirection vers la carte avec l'email dans l'URL
+            setTimeout(() => {
+                window.location.href = `carte.html?email=${encodeURIComponent(emailVal)}&resto=${config.id}`;
+            }, 1200);
+
+        } catch (err) {
+            console.error('Inscription error:', err);
+            btn.textContent = 'Activer ma carte fidélité 🚀';
+            btn.disabled    = false;
+            alert('Une erreur est survenue. Réessayez.');
         }
     });
-    </script>
+
+    function soumettreBrevo(actionUrl, email, prenom, nom, sms, anniversaire, optIn) {
+        const tmpForm = document.createElement('form');
+        tmpForm.method='POST'; tmpForm.action=actionUrl; tmpForm.target='brevo_iframe'; tmpForm.style.display='none';
+        const champs = { 'EMAIL':email,'PRENOM':prenom,'NOM':nom,'SMS':sms||'','DATE_ANNIVERSAIRE':anniversaire||'','OPT_IN':optIn?'true':'false','email_address_check':'','locale':'fr' };
+        Object.entries(champs).forEach(([name,value]) => {
+            const input = document.createElement('input');
+            input.type='hidden'; input.name=name; input.value=value||'';
+            tmpForm.appendChild(input);
+        });
+        document.body.appendChild(tmpForm);
+        if (!document.getElementById('brevo_iframe')) {
+            const iframe = document.createElement('iframe');
+            iframe.name='brevo_iframe'; iframe.id='brevo_iframe'; iframe.style.display='none';
+            document.body.appendChild(iframe);
+        }
+        tmpForm.submit();
+        setTimeout(() => document.body.removeChild(tmpForm), 2000);
+    }
+});
+</script>
 </body>
 </html>
