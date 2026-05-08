@@ -10,18 +10,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root { --primary: #0F766E; --bg-dark: #0f172a; }
+        :root { --primary: #0F766E; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: var(--bg-dark); color: white; 
+            background: #0f172a; color: white; 
             display: flex; justify-content: center; align-items: center; 
-            height: 100vh; text-align: center; 
-            transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
+            height: 100vh; text-align: center; overflow: hidden;
+            transition: background-color 0.4s cubic-bezier(0.16,1,0.3,1);
         }
-
         .validation-box {
             padding: 40px; background: rgba(255,255,255,0.05);
             border-radius: 32px; border: 1px solid rgba(255,255,255,0.1);
@@ -29,69 +26,60 @@
             box-shadow: 0 25px 50px rgba(0,0,0,0.4);
             backdrop-filter: blur(10px);
             transform: scale(0.95); opacity: 0;
-            animation: popIn 0.5s forwards cubic-bezier(0.16, 1, 0.3, 1);
+            animation: popIn 0.5s forwards cubic-bezier(0.16,1,0.3,1);
         }
-        @keyframes popIn { to { transform: scale(1); opacity: 1; } }
-
-        .brand-tag {
-            font-size: 10px; font-weight: 800;
-            color: rgba(255,255,255,0.4);
-            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px;
-        }
-
-        .icon  { font-size: 55px; margin-bottom: 15px; display: block; }
-        h1     { font-size: 32px; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; }
-        p      { color: rgba(255,255,255,0.8); font-size: 15px; font-weight: 600; line-height: 1.4; }
-        
-        .score-display { 
-            font-size: 80px; font-weight: 800; color: white; 
-            margin: 20px 0 10px 0; display: none;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.3); line-height: 1;
-        }
-
-        .client-name {
-            font-size: 18px; font-weight: 700; color: white;
-            margin-bottom: 8px; display: none;
-        }
-
-        body.success { background-color: #0F766E; } 
-        body.error   { background-color: #ef4444; }   
-        body.reward  { background-color: #f59e0b; }  
-        body.warning { background-color: #f97316; } 
+        @keyframes popIn { to { transform:scale(1); opacity:1; } }
+        .brand-tag { font-size:10px; font-weight:800; color:rgba(255,255,255,0.4); letter-spacing:2px; text-transform:uppercase; margin-bottom:20px; }
+        .icon { font-size:55px; margin-bottom:15px; display:block; }
+        .client-name { font-size:18px; font-weight:700; margin-bottom:8px; display:none; }
+        h1 { font-size:32px; font-weight:800; margin-bottom:10px; letter-spacing:-1px; }
+        p  { color:rgba(255,255,255,0.8); font-size:15px; font-weight:600; line-height:1.4; }
+        .score-display { font-size:80px; font-weight:800; margin:20px 0 10px; display:none; text-shadow:0 10px 30px rgba(0,0,0,0.3); line-height:1; }
+        body.success { background-color:#0F766E; }
+        body.error   { background-color:#ef4444; }
+        body.reward  { background-color:#f59e0b; }
+        body.warning { background-color:#f97316; }
     </style>
 </head>
 <body>
-
-    <div class="validation-box" id="ui-box">
+    <div class="validation-box">
         <div class="brand-tag">Système FYDELIO</div>
-        <span class="icon"  id="ui-icon">⏳</span>
-        <div class="client-name" id="ui-client"></div>
-        <h1 id="ui-title">Analyse...</h1>
-        <p  id="ui-text">Mise à jour du profil client</p>
+        <span class="icon"         id="ui-icon">⏳</span>
+        <div class="client-name"   id="ui-client"></div>
+        <h1                        id="ui-title">Analyse...</h1>
+        <p                         id="ui-text">Mise à jour du profil client</p>
         <div class="score-display" id="ui-score">0</div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const config   = appliquerConfig();
-        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const params   = new URLSearchParams(window.location.search);
 
-        // 🔐 Token UUID (nouvelle carte) OU email (ancienne carte)
-        const token = params.get('token');
-        const email = params.get('email'); // rétro-compatibilité
+        const config    = appliquerConfig();
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const params    = new URLSearchParams(window.location.search);
+        const email     = params.get('email');
+
+        // Éléments UI
+        const uiIcon   = document.getElementById('ui-icon');
+        const uiTitle  = document.getElementById('ui-title');
+        const uiText   = document.getElementById('ui-text');
+        const uiScore  = document.getElementById('ui-score');
+        const uiClient = document.getElementById('ui-client');
 
         // Colonnes selon le restaurant
-        const colPoints = config.id === 'villa_saint_antoine'
-            ? 'points_villa'
-            : 'points_bistrot';
-        const colSecu = config.id === 'villa_saint_antoine'
-            ? 'last_scan_villa'
-            : 'last_scan_bistrot';
+        const colPoints = config.id === 'villa_saint_antoine' ? 'points_villa'    : 'points_bistrot';
+        const colSecu   = config.id === 'villa_saint_antoine' ? 'last_scan_villa' : 'last_scan_bistrot';
+
+        function retourScanner(delai) {
+            setTimeout(() => {
+                window.location.href = `scanner.html?resto=${config.id}`;
+            }, delai);
+        }
 
         async function traiterScan() {
 
-            if (!token && !email) {
+            // Email manquant
+            if (!email) {
                 document.body.classList.add('error');
                 uiIcon.innerText  = '❌';
                 uiTitle.innerText = 'Erreur';
@@ -99,22 +87,19 @@
                 return retourScanner(3000);
             }
 
+            const emailNormalise = email.toLowerCase().trim();
+
             try {
-                // Recherche par token (nouvelle carte) ou email (ancienne)
-                let query = supabase.from('clients')
-                    .select(`prenom, email, ${colPoints}, ${colSecu}`);
-
-                if (token) {
-                    query = query.eq('unsubscribe_token', token);
-                } else {
-                    query = query.eq('email', email.toLowerCase().trim());
-                }
-
-                const { data: client, error: fetchError } = await query.maybeSingle();
+                // 1. Recherche du client par email
+                const { data: client, error: fetchError } = await _supabase
+                    .from('clients')
+                    .select(`prenom, email, recompenses_obtenues, ${colPoints}, ${colSecu}`)
+                    .eq('email', emailNormalise)
+                    .maybeSingle();
 
                 if (fetchError) throw fetchError;
 
-                // Token non trouvé
+                // Client introuvable
                 if (!client) {
                     document.body.classList.add('error');
                     uiIcon.innerText  = '❌';
@@ -123,22 +108,20 @@
                     return retourScanner(3500);
                 }
 
-                // Afficher le prénom du client
+                // Afficher le prénom
                 if (client.prenom) {
-                    uiClient.innerText   = client.prenom;
+                    uiClient.innerText     = client.prenom;
                     uiClient.style.display = 'block';
                 }
 
-                // 2. Anti-fraude — délai entre 2 scans
+                // 2. Anti-fraude
                 if (client[colSecu]) {
-                    const dernierScan    = new Date(client[colSecu]).getTime();
-                    const heuresEcoulees = (Date.now() - dernierScan) / (1000 * 60 * 60);
-
-                    if (heuresEcoulees < config.delaiAntiFraudeHeures) {
+                    const heures = (Date.now() - new Date(client[colSecu]).getTime()) / 3600000;
+                    if (heures < config.delaiAntiFraudeHeures) {
                         document.body.classList.add('warning');
                         uiIcon.innerText  = '🛡️';
                         uiTitle.innerText = 'Déjà scanné';
-                        uiText.innerText  = `${client.prenom || 'Ce client'} a déjà été validé aujourd'hui.`;
+                        uiText.innerText  = `${client.prenom || 'Ce client'} a déjà été validé aujourd\'hui.`;
                         return retourScanner(4000);
                     }
                 }
@@ -156,52 +139,32 @@
                     if (nouveauScore === config.seuilPoints) estCadeau = true;
                 }
 
-                // 4. Mise à jour en base par TOKEN
+                // 4. Mise à jour en base
                 const updateData = {
                     [colPoints]: nouveauScore,
                     [colSecu]:   new Date().toISOString()
                 };
-
-                // Si cadeau → incrémenter recompenses_obtenues
                 if (estCadeau) {
-                    updateData.recompenses_obtenues = (_supabase.rpc
-                        ? undefined // géré via SQL ci-dessous
-                        : (client.recompenses_obtenues || 0) + 1);
+                    updateData.recompenses_obtenues = (client.recompenses_obtenues || 0) + 1;
                 }
-
-                const identifier = token
-                    ? { unsubscribe_token: token }
-                    : { email: email.toLowerCase().trim() };
 
                 const { error: updateError } = await _supabase
                     .from('clients')
-                    .update({ [colPoints]: nouveauScore, [colSecu]: new Date().toISOString() })
-                    .eq(token ? 'unsubscribe_token' : 'email', token || email.toLowerCase().trim());
+                    .update(updateData)
+                    .eq('email', emailNormalise);
 
                 if (updateError) throw updateError;
 
-                // Incrémenter recompenses_obtenues si cadeau
-                if (estCadeau) {
-                    await _supabase.rpc('increment_recompenses', {
-                        client_email: client.email
-                    }).catch(() => {
-                        // Fallback si RPC pas disponible
-                        _supabase.from('clients')
-                            .update({ recompenses_obtenues: (client.recompenses_obtenues || 0) + 1 })
-                            .eq('email', client.email);
-                    });
-                }
-
-                // 5. Enregistrer dans historique_scans
+                // 5. Enregistrement historique_scans
                 await _supabase.from('historique_scans').insert({
-                    client_email:  client.email,
+                    client_email:  emailNormalise,
                     restaurant_id: config.id,
                     points_avant:  scoreActuel,
                     points_apres:  nouveauScore,
                     est_cadeau:    estCadeau
                 });
 
-                // 5. UI résultat
+                // 6. Affichage résultat
                 if (estCadeau) {
                     document.body.classList.add('reward');
                     uiIcon.innerText  = '🎁';
